@@ -2,18 +2,16 @@
 
 = About this Manual =
 
-This is the technical manual for how to use my MB++ Application (available on the Downloads page). Some new functionality many not be documented or available in a stable package. You should first read the GettingStarted page. The _italic_ text is optional and *bold* text is
-One
-Two
-Three
-
-  ONe
-  Two
-  Three
--One
--Two
--Three
-
+This is the technical manual for how to use my MB++ Application (available on the Downloads page). Some new functionality many not be documented or available in a stable package. You should first read the GettingStarted page. The _italic_ text is optional and *bold* text is the name of the sub called.
+'code'
+*One
+*Two
+#One
+#Two
+---
+[http://mikeos.berlios.de]
+||Hello||Hello||Hello||
+||Hello||Hello||
 
 = Details =
 
