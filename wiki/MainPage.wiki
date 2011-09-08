@@ -1,0 +1,13 @@
+#MikeBASIC PlusPlus Technical Manual
+
+= About this Manual =
+
+This is the technical manual for how to use my MB++ Application (available on the Downloads page). Some new functionality many not be documented or available in a stable package. You should first read the GettingStarted page.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
