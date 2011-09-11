@@ -1,18 +1,18 @@
 #MB++ Technical Manual
 <br>--ARRAYGET-- </br>
 <br> Gets data from an array.  </br>
-Set A, B, C or D to a number and it will be replace with the
-character at that position in the array.
--Input:
-A, B, C or D position in the array
-$v array to use ($v = "a")
--Output:
-A, B, C or D output from array.
--Notes:
-There are 4 arrays and they are each limited to 100 positions.
-Uses memory between 60000-60399.
-Arrays do NOT edit your text variables. They are saved in memory.
--Used in:
-(none)
--Uses:
-ERRBOX
+<br> Set A, B, C or D to a number and it will be replace with the </br>
+<br> character at that position in the array. </br>
+<br> -Input:</br>
+<br> A, B, C or D position in the array </br>
+<br> $v array to use ($v = "a")</br>
+<br> -Output:</br>
+<br> A, B, C or D output from array.</br>
+<br> -Notes:</br>
+<br> There are 4 arrays and they are each limited to 100 positions.</br>
+<br> Uses memory between 60000-60399.</br>
+<br>Arrays do NOT edit your text variables. They are saved in memory.</br>
+<br> -Used in:</br>
+<br> (none)</br>
+<br> -Uses:</br>
+<br> ERRBOX</br>
