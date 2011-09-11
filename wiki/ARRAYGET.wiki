@@ -1,7 +1,7 @@
 #MB++ Technical Manual
 --ARRAYGET--
-Gets data from an array.
-Set A, B, C or D to a number and it will be replace with the
+Gets data from an array.  <br>
+Set A, B, C or D to a number and it will be replace with the <br>
 character at that position in the array.
 -Input:
 A, B, C or D position in the array
