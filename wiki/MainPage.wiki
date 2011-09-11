@@ -2,20 +2,39 @@
 
 = About this Manual =
 
-This is the technical manual for how to use my MB++ Application (available on the Downloads page). Some new functionality many not be documented or available in a stable package. You should first read the GettingStarted page. The _italic_ text is optional and *bold* text is the name of the sub called.
-'code'
-  *One
-  *Two
-  #One
-  #Two
----
-[http://mikeos.berlios.de]
-||Hello||Hello||Hello||
-||Hello||Hello||
+This is the technical manual for how to use my MB++ Application (available on the Downloads page). Some new functionality many not be documented or available in a stable package. You should first read the GettingStarted page. To use functions set the input variables and *GOSUB* to them. This manual is for the stable package.
 
-= Details =
+= High Level Functions =
+These are for use by program.
 
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+* ARRAYGET
+* ARRAYPUT
+* BORDER
+* CLEAR
+* COLOUR
+* DINBOX
+* ENDPROG
+* ERRBOX
+* INPBOX
+* HIGHLIGHT
+* LOADBOX
+* MENUBOX
+* MESBOX
+* NUMBOX
+* REFRESH
+* SETTITLE
+* STARTPRG
+* TITLE
+* XGET
+* XPUT
+
+= Low Level Functions =
+These are more technical and used by high level functions.
+
+* ANI-
+* BLOCK-
+* BOX
+* BOXREST
+* BOXSAVE
+* DEFCOL
+* MENUA
