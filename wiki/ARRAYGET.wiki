@@ -1,5 +1,5 @@
 #MB++ Technical Manual
---ARRAYGET-- </br>
+<br>--ARRAYGET-- </br>
 <br> Gets data from an array.  </br>
 Set A, B, C or D to a number and it will be replace with the
 character at that position in the array.
