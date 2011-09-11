@@ -1,13 +1,18 @@
-#summary One-sentence summary of this page.
-
-= Introduction =
-
-Add your content here.
-
-
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+#MB++ Technical Manual
+--ARRAYGET--
+Gets data from an array.
+Set A, B, C or D to a number and it will be replace with the
+character at that position in the array.
+-Input:
+A, B, C or D position in the array
+$v array to use ($v = "a")
+-Output:
+A, B, C or D output from array.
+-Notes:
+There are 4 arrays and they are each limited to 100 positions.
+Uses memory between 60000-60399.
+Arrays do NOT edit your text variables. They are saved in memory.
+-Used in:
+(none)
+-Uses:
+ERRBOX
