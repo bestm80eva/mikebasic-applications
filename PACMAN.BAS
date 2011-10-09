@@ -1,326 +1,410 @@
-rem ASCII Artist (DRAW.BAS)
-rem Version 2.1
-rem Uses MB++ Version 2.1.7
-rem Released under the GNU General Public Licence revision 3
-rem If you have any comments or changes send them to mikeosdeveloper@gmail.com
+REM Pacman clone for MikeBASIC (PACMAN.BAS)
+REM Version 1.0.0
+REM Send any ideas, bug reports or modifications to:
+REM mikeosdeveloper@gmail.com
+REM Made with MB++ framework version 2.1.4
 
-preload:
-  print "loading..."
-  gosub blank
-  rem did they specify a filename?
-  if $1 = " " then $1 = ""
-  if $1 = "" then goto nopara
-  rem change any lowercase letters in the parameters to capital
-  x = & $1
-  gosub capitalise
-  rem now load it
-  load $1 59999 
-  if r = 0 then $2 = $1
-  if r = 0 then goto nopara
-  print "File '";
-  print $1 ;
-  print "' not found."
-  end
-  nopara:
-  z = 61990
-  for x = 1 to 10
-    read keyval x y
-    poke y z
-    z = z + 1
-  next x
-  goto config
-
-  rem default values for numbers in asending order
-  rem we don't have enough variables so we poke them into memory
-
-  keyval:
-  255 178 220 219 221 254 222 176 223 177
-
-  config:
-  rem starting position for cursor
-  l = 1
-  m = 1
-
-start:
-  rem MB++ start block (define interface)
-  $z = "NOINT"
-  $y = "ENABLE"
-  z = 4
-  gosub startprg
-  c = 4
-  h = 12
-  t = 4
-  z = 4
-  $t = "ASCII Artist for MikeBASIC Version 2.0"
-  gosub settitle
-  cls
-  
-titlemsg:
+START:
+  Z = 7
   $z = "FULLINT"
-  gosub refresh
-  o = 0
-  gosub colchange
-  $t = "ASCII Artist for MikeBASIC"
-  $b = "Made by Joshua Beck"
-  $c = "Version 1.2"
-  $e = "Release under GNU GPLv3"
-  $f = "Uses MB++ version 2.1.7"
-  $g = "Make sure numpad is on!"
-  gosub mesbox
+  $y = "ENABLE"
+  REM $y = "DISABLE"
+  $t = "Pacman clone for MikeBASIC"
+  GOSUB STARTPRG
+  C = 7
+  H = 5
+  T = 14
+  $l = "PACMAN.LVL"
+  I = 64
+  S = 3
+  Q = 234
+  $v = "a"
+GOTO MAINMENU
 
-keyboard:
-  waitkey k
-  if k = 1 then gosub keyup
-  if k = 2 then gosub keydown
-  if k = 3 then gosub keyright
-  if k = 4 then gosub keyleft
-  if k = 18 then gosub refresh
-  if k = 19 then gosub saveover
-  if k = 27 then gosub mainmenu
-  if k > 47 and k < 58 then gosub numkey
-  if k > 47 and k < 58 then goto keyboard
-  if k > 31 and k < 127 then gosub otherkey
-goto keyboard
+MAINMENU:
+  $t = "Main Menu"
+  $b = "Start"
+  $c = "Select Level"
+  $e = "Settings"
+  $f = "About"
+  $g = "Quit"
+  GOSUB MENUBOX
+  O = V
+  IF O = 1 THEN GOSUB STARTLVL
+  IF O = 1 THEN GOSUB MAIN
+  IF O = 2 THEN GOSUB INPUTLVL
+  IF O = 3 THEN GOSUB SETTINGS
+  IF U = 1 THEN O = 0
+  IF U = 1 THEN U = 0
+  IF O = 4 THEN GOSUB ABOUT
+  IF O = 5 THEN GOSUB ENDQUEST
+GOTO MAINMENU
 
-mainmenu:
-  gosub colchange
-  $t = "            Options"
-  $b = "        Return to Editor"
-  $c = "          New/Load/Save"
-  $e = "              Help"
-  $f = "       Change number value"
-  $g = "              Exit"
-  gosub menubox
-  if v = 1 then gosub colchange
-  if v = 1 then return
-  if v = 2 then gosub filemenu
-  if v = 3 then gosub help
-  if v = 4 then gosub change
-  if v = 5 then gosub endprog
-  o = 0
-  gosub colchange
-goto mainmenu
- 
-filemenu:
-  $t = "        File Operations"
-  $b = "          New Picture"
-  $c = "          Load Picture"
-  $e = "          Save Picture"
-  $f = "        Save Picture As..."
-  $g = "              Back"
-  gosub menubox
-  w = v
-  v = 0
-  if w = 1 then gosub blank
-  if w = 1 then gosub refresh
-  if w = 2 then gosub loadfile
-  if w = 3 then gosub saveover
-  if w = 4 then gosub savefile
-  if w = 5 then return
-goto filemenu
+STARTLVL:
+  GOSUB LOADLVL
+  GOSUB DRAWLVL
+  GOSUB DOTCOUNT
+  GOSUB PREPCHAR
+  GOSUB INITGHOST
+RETURN
 
-capitalise:
-  for y = 1 to 12
-    peek z x
-    if z > 96 and z < 123 then z = z - 32
-    poke z x
-    x = x + 1
-  next y
-return
+KEYBOARD:
+  GETKEY K
+  IF K = 'W' THEN D = 1
+  IF K = 'w' THEN D = 1
+  IF K = 'S' THEN D = 2
+  IF K = 's' THEN D = 2
+  IF K = 'A' THEN D = 3
+  IF K = 'a' THEN D = 3
+  IF K = 'D' THEN D = 4
+  IF K = 'd' THEN D = 4
+  IF K = 27 THEN GOSUB PAUSE
+RETURN
 
-blank:
-  for x = 59999 to 62000
-    poke 0 x
-  next x
-return
-
-colchange:
-  rem create red outline or remove it
-  x = l + 1
-  y = m + 2
-  e = c
-  if o = 0 then c = 79
-  if o = 1 then c = 7
-  gosub colour
-  c = e
-  j = o
-  if j = 1 then o = 0
-  if j = 0 then o = 1
-return
-
-keyup:
-  if m = 1 then return
-  gosub colchange
-  m = m - 1
-  gosub colchange
-  return 
-keydown:
-  if m = 20 then return
-  gosub colchange
-  m = m + 1
-  gosub colchange 
-  return
-keyright:
-  if l = 1 then return
-  gosub colchange
-  l = l - 1
-  gosub colchange
-  return
-keyleft:
-  if l = 77 then return
-  gosub colchange
-  l = l + 1
-  gosub colchange
-  return
-numkey:
-  rem convert ascii to number
-  j = k - 48
-  rem now goto the memory cell it's stored
-  j = j + 61990
-  peek i j
-  rem move the cursor to the correct position
-  e = l + 1
-  f = m + 2
-  move e f
-  print chr i
-  rem now save to memory
-  j = m - 1
-  j = j * 80
-  j = j + l + 59998
-  poke i j
-return
-
-otherkey:
-  e = l + 1
-  f = m + 2
-  move e f
-  print chr k
-  j = m - 1
-  j = j * 80
-  j = j + l + 59998
-  poke k j
-return
-
-change:
-  rem change default keys
-  $t = "Change characters"
-  $b = "Enter number key to change."
-  $c = "10 to cancel."
-  $e = "Must be  0 - 9!"
-  v = 0
-  gosub inpbox
-  rem error uses $e to define the problem
-  if a = 10 then return
-  if a > 9 then goto errbox
-  if a < 0 then goto errbox
-  poke a 62000
-  $b = "Input a new decimal value for the key"
-  $c = "between 0 and 255."
-  $e = "Must be 0 - 255!"
-  v = 0
-  gosub inpbox
-  b = a
-  peek a 62000
-  if b > 255 then goto errbox
-  if b < 0 then goto errbox
-  j = 61990 + a
-  poke b j
-  return
-help:
-  $t = "              Help"
-  $b = "Use the arrows to move the cursor"
-  $c = "around the screen."
-  $e = "Use the numbers on the numpad to put "
-  $f = "to write characters to screen." 
-  $g = "You can save your work with Ctl+S."
-  gosub mesbox
-  $b = "You can change the character"
-  $c = "value produced by a number key."
-  $e = "You can also use keyboard keys."
-  $f = "Press escape for the menu."
-  $g = "Finally, have fun! :-)"
-  gosub mesbox
-return
-
-savefile:
-  $t = "Save"
-  move 26 10 
-  $b = "Enter an 8.3 type filename to save"
-  $c = "picture as (ie foo.bar)."
-  $e = "Invalid Filename!"
-  v = 1
-  gosub inpbox
-  $1 = $i
-  save $1 59999 2001
-  o = 0
-  gosub colchange
-  rem R is the result code from 'save'
-  rem 0 = success, 1 = invalid name, 2 = file exists
-  if R = 2 then goto overwrite
-  if R > 2 then $e = "Unknown Error!"
-  if R > 0 then goto errbox
-return
-
-saveover:
-  if $2 = "" then goto savefile
-  $e = "File invalid! Did disk change?"
-  delete $2 r
-  save $2 59999 2001
-  if r = 2 then $e = "Disk is read-only!"
-  if r > 0 then goto errbox
-return
-  
-overwrite:
-  $t = "Warning!"
+ABOUT:
+  $t = "About"
   $b = ""
-  $c = "File already exists."
-  $e = "Do you wish to overwrite it?"
+  $c = "Pacman clone for MikeBASIC"
+  $e = "Created by Joshua Beck."
+  $f = "Uses MB++ version 2.1.4"
+  $g = ""
+  GOSUB MESBOX
+RETURN
+
+ENDQUEST:
+  O = 0
+  $t = "Exit Program"
+  $b = "Are you sure you want"
+  $c = "  to quit Pacman?"
+  $e = ""
   $f = ""
-  gosub askbox
-  if v = 0 then goto savefile
-  delete $1 v
-  $e = "Unknown Error!"
-  if v = 2 then $e = "Read Only Disk!"
-  if v > 0 then goto errbox
-  save $1 59999 2001
-return
+  $g = ""
+  GOSUB ASKBOX
+  IF V = 0 THEN RETURN
+  IF V = 1 THEN GOSUB ENDPROG
 
-loadfile:
-  $t = "Load"
-  $b = "Enter an 8.3 type filename to load"
-  $c = "from (ie foo.bar)"
-  $e = "File does not exist!"
-  v = 1
-  gosub inpbox
-  load $i 59999
-  if R > 1 then $e = "Unknown Error!"
-  if R > 0 then goto errbox
-  $2 = $i
-  gosub refresh
-  o = 0
-  gosub colchange
-return
+STOP:
+  IF D = 1 THEN F = F + 1
+  IF D = 2 THEN F = F - 1
+  IF D = 3 THEN E = E + 1
+  IF D = 4 THEN E = E - 1
+  MOVE E F
+  D = 0
+RETURN
 
-content:
-  for y = 3 to 22
-    j = y - 3
-    j = j * 80
-    j = j + 59999
-    for x = 2 to 78
-      peek v j
-      move x y
-      print chr v
-      j = j + 1
-    next x
-  next y
-  y = 23
-  move 2 y
-  for x = 2 to 24
-    gosub colour
-  next x
-  o = 0
-  gosub colchange
-return
+INPUTLVL:
+  $b = "Input a level file to load"
+  $c = "ie FOO.LVL"
+  V = 1
+  GOSUB INPBOX
+  $l = $i
+RETURN
+
+LOADLVL:
+  J = S
+  LOAD $l 60000
+  S = J
+  IF R = 0 THEN RETURN
+  $e = "Level failed to load!"
+  GOSUB ERRBOX
+RETURN
+
+DRAWLVL:
+  V = 60000
+  GOSUB PICTOTXT
+  V = 60000
+  W = 80
+  X = 1
+  Y = 3
+  GOSUB ANCITEXT
+RETURN
+  
+DOTCOUNT:
+  G = 0
+  FOR X = 1 TO 78
+    FOR Y = 3 TO 22
+      MOVE X Y
+      CURSCHAR J
+      IF J = 254 THEN G = G + 1
+    NEXT Y
+  NEXT X
+  G = G - 1
+RETURN
+
+PREPCHAR:
+  E = 2
+  F = 4
+  MOVE E F
+  PRINT CHR I
+  G = G - 1
+  X = E
+  Y = F
+  GOSUB COLOUR
+RETURN
+
+INITGHOST:
+  FOR X = 1 TO 10
+    A = X * 4
+    V = 40
+    GOSUB ARRAYPUT
+    A = A + 1
+    V = 21
+    GOSUB ARRAYPUT
+    A = A + 1
+    RAND V 1 4
+    GOSUB ARRAYPUT
+    A = A + 1
+    V = 254
+    GOSUB ARRAYPUT
+  NEXT X
+RETURN
+
+PAUSE:
+  $t = "Game Paused"
+  $b = "Resume"
+  $c = "Settings"
+  $e = "Restart"
+  $f = "Exit"
+  $g = ""
+  GOSUB MENUBOX
+  O = V
+  IF O = 1 THEN RETURN
+  IF O = 2 THEN GOSUB SETTINGS
+  IF U = 1 THEN O = 0
+  IF U = 1 THEN U = 0
+  IF O = 3 THEN GOSUB RELOAD
+  IF O = 3 THEN RETURN
+  IF O = 4 THEN U = 1
+  IF O = 4 THEN Z = 7
+  IF O = 4 THEN GOSUB REFRESH
+  IF O = 4 THEN RETURN
+GOTO PAUSE
+
+RELOAD:
+  GOSUB REFRESH
+  GOSUB DRAWLVL
+  GOSUB DOTCOUNT
+  GOSUB PREPCHAR
+  GOSUB INITGHOST
+  D = 0
+RETURN
+
+MAIN:
+  GOSUB MOVEGHOST
+  U = 0  
+  GOSUB KEYBOARD
+  IF U = 1 THEN O = 0
+  IF U = 1 THEN RETURN
+  IF D = 0 THEN PAUSE S
+  IF D = 0 THEN GOTO MAIN
+  MOVE E F
+  CURSCHAR J
+  IF J = Q THEN GOSUB LOSE
+  IF J = Q THEN IF V = 1 THEN GOSUB RELOAD
+  IF J = Q THEN IF V = 1 THEN GOTO MAIN
+  IF J = Q THEN IF V = 0 THEN GOSUB REFRESH
+  IF J = Q THEN IF V = 0 THEN RETURN
+  PRINT " " ;
+  IF D = 1 THEN F = F - 1
+  IF D = 2 THEN F = F + 1
+  IF D = 3 THEN E = E - 1
+  IF D = 4 THEN E = E + 1
+  IF E < 1 THEN E = 77
+  IF E > 77 THEN E = 1
+  IF F < 3 THEN F = 22
+  IF F > 22 THEN F = 3
+  MOVE E F
+  CURSCHAR J
+  IF J = 254 THEN G = G - 1
+  IF J = 219 THEN GOSUB STOP
+  IF G = 0 THEN GOSUB WIN
+  PRINT CHR I
+  X = E
+  Y = F
+  GOSUB COLOUR
+  PAUSE S
+GOTO MAIN
+
+MOVEGHOST:
+  GOSUB SAVECHAR
+  FOR X = 1 TO 10
+    GOSUB GETINFO
+    MOVE E F
+    IF I > Q THEN PRINT CHR I
+    IF I < Q THEN PRINT CHR I
+    IF D = 1 THEN F = F - 1
+    IF D = 2 THEN F = F + 1
+    IF D = 3 THEN E = E - 1
+    IF D = 4 THEN E = E + 1
+    IF E < 1 THEN E = 77
+    IF E > 77 THEN E = 1
+    IF F < 3 THEN F = 22
+    IF F > 22 THEN F = 3
+    MOVE E F
+    RAND Y 1 10
+    IF Y = 10 THEN GOSUB GHOSTPF
+    CURSCHAR J
+    IF J = 219 THEN GOSUB GHOSTPF
+    CURSCHAR I
+    PRINT CHR Q
+    GOSUB SAVEINFO   
+  NEXT X
+  GOSUB RESTCHAR
+  A = 0
+RETURN
+
+SAVECHAR:
+  A = 0
+  V = E
+  GOSUB ARRAYPUT
+  A = A + 1
+  V = F
+  GOSUB ARRAYPUT
+  A = A + 1
+  V = D
+  GOSUB ARRAYPUT
+  A = A + 1
+  V = I
+  GOSUB ARRAYPUT
+RETURN
+
+RESTCHAR:
+  A = 0
+  GOSUB ARRAYGET
+  E = V
+  A = A + 1
+  GOSUB ARRAYGET
+  F = V
+  A = A + 1
+  GOSUB ARRAYGET
+  D = V
+  A = A + 1
+  GOSUB ARRAYGET
+  I = V
+RETURN
+
+GETINFO:
+  A = X * 4
+  GOSUB ARRAYGET
+  E = V
+  A = A + 1
+  GOSUB ARRAYGET
+  F = V
+  A = A + 1
+  GOSUB ARRAYGET
+  D = V
+  A = A + 1
+  GOSUB ARRAYGET
+  I = V
+RETURN
+
+SAVEINFO:
+  A = X * 4
+  V = E
+  GOSUB ARRAYPUT
+  A = A + 1
+  V = F
+  GOSUB ARRAYPUT
+  A = A + 1
+  V = D
+  GOSUB ARRAYPUT
+  A = A + 1
+  V = I
+  GOSUB ARRAYPUT
+RETURN
+
+GHOSTPF:
+  REM Ghost PathFinder
+  REM If a ghost encounters a wall find another direction
+
+  REM go back to original spot
+  IF D = 1 THEN F = F + 1
+  IF D = 2 THEN F = F - 1
+  IF D = 3 THEN E = E + 1
+  IF D = 4 THEN E = E - 1
+  REM choose a random direction
+  RAND D 1 4
+
+  REM move cursor there
+  IF D = 1 THEN F = F - 1
+  IF D = 2 THEN F = F + 1
+  IF D = 3 THEN E = E - 1
+  IF D = 4 THEN E = E + 1
+  MOVE E F
+
+  REM is there are wall there? if so try again
+  CURSCHAR J
+  IF J = 219 THEN GOTO GHOSTPF
+
+  REM  REM is the ghost off the screen? teleport!
+  REM IF E < 1 THEN E = 77
+  REM IF E > 77 THEN E = 1
+  REM IF F < 3 THEN F = 22
+  REM IF F > 22 THEN F = 3
+
+RETURN
+
+SETTINGS:
+  $t = "Settings"
+  $b = "Toggle box animations"
+  $c = "Set speed"
+  $e = "Set ghost character"
+  $f = "Set pacman character"
+  $g = "Back"
+  GOSUB MENUBOX
+  O = V
+  IF O = 1 THEN GOSUB SWANIMAT
+  IF O = 2 THEN GOSUB SETSPEED
+  IF O = 3 THEN GOSUB SETCOLOR
+  IF O = 5 THEN U = 1
+  IF O = 5 THEN RETURN
+GOTO SETTINGS
+
+SWANIMAT:
+  IF $y = "ENABLE" THEN GOTO SWANIEN
+  IF $y = "DISABLE" THEN GOTO SWANIDI
+RETURN
+  SWANIEN:
+    $y = "DISABLE"
+  RETURN
+
+  SWANIDI:
+    $y = "ENABLE"
+  RETURN
+
+SETSPEED:
+  $b = "Input a new game speed"
+  $c = "Must be between 1-10"
+  $e = "Number out of range"
+  V = 0
+  GOSUB INPBOX
+  IF A < 1 THEN GOSUB ERRBOX
+  IF A < 1 THEN GOTO SETSPEED
+  IF A > 10 THEN GOSUB ERRBOX
+  IF A > 10 THEN GOTO SETSPEED
+  S = 10 - A
+RETURN
+
+WIN:
+  $t = "You won!!!!"
+  $b = "Nice Work!"
+  $c = "Replay this level?"
+  GOSUB ASKBOX
+RETURN
+
+LOSE:
+  $t = "You lost..."
+  $b = "Too bad :-("
+  $c = "Play again?"
+  $e = ""
+  $f = ""
+  $g = ""
+  GOSUB ASKBOX
+  J = Q
+RETURN
+
+CONTENT:
+RETURN
 
 REM >>>>MIKEBASIC-PLUS-PLUS-FUNCTIONS<<<
 MOVE 0 0
@@ -360,7 +444,6 @@ STARTPRG:
     W = 0
     X = 0
     Y = 0
-    Z = 0
     $b = ""
     $c = ""
     $e = ""
@@ -1006,8 +1089,8 @@ arrayget:
   if $v = "b" then w = b
   if $v = "c" then w = c
   if $v = "d" then w = d
-  if w > 99 then $e = "Array over maximum"
-  if w < 0 then $e = "Number below zero"
+  if w > 99 then $e = "ARRAYGET: Location too high"
+  if w < 0 then $e = "ARRAYGET: Location too low"
   if w > 99 then goto errbox
   if w < 0 then goto errbox
   j = j + w
@@ -1023,8 +1106,8 @@ arrayput:
   if $v = "b" then w = b
   if $v = "c" then w = c
   if $v = "d" then w = d
-  if w > 99 then $e = "Array over maximum"
-  if w < 0 then $e = "Number below zero"
+  if w > 99 then $e = "ARRAYPUT: Location too high"
+  if w < 0 then $e = "ARRAYPUT: Location too low"
   if w > 99 then goto errbox
   if w < 0 then goto errbox
   j = j + w
@@ -1068,11 +1151,11 @@ loadbox:
     if v < 6 then gosub menua
     if v = 6 then gosub loadback
     if v = 6 then poke 0 65438
-rem    if v = 6 then gosub lbhelper
+    if v = 6 then gosub lbhelper
     if v = 6 then goto menufunc
     if v = 7 then gosub loadforw
     if v = 7 then poke 4 65438
-rem    if v = 7 then gosub lbhelper
+    if v = 7 then gosub lbhelper
     if v = 7 then goto menufunc
   poke 0 65436
   x = s
