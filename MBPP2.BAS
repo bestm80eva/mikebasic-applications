@@ -299,8 +299,10 @@ ERRBOX:
   GOSUB OPENBOX
   move 22 12
   print $E
-  move 22 14
-  print "Press any key to continue."
+  MOVE 22 14
+  PRINT "Press escape to end program."
+  MOVE 22 15
+  print "Press any other key to continue."
   cursor on
   move 48 14
   waitkey j
@@ -465,27 +467,14 @@ BOX:
   W = 1
   X = 20
   FOR J = 1 TO 2
-    FOR Y = 8 TO 11
+    FOR Y = 8 TO 17
       MOVE X Y
-      READ BORDERDATA W V
+      READ BOXDATA W V
       PRINT CHR V
       W = W + 1
     NEXT Y
     X = 59
   NEXT J
-  V = 186
-  FOR Y = 12 TO 16
-    MOVE 20 Y
-    PRINT CHR V
-    MOVE 59 Y
-    PRINT CHR V
-  NEXT Y
-  MOVE 20 17
-  V = 192
-  PRINT CHR V
-  MOVE 59 17
-  V = 217
-  PRINT CHR V
   V = 205
   FOR X = 21 TO 58
     MOVE X 8
@@ -504,285 +493,127 @@ BOX:
   next x
 RETURN
 
-arrayget:
-  if $v = "a" then j = 0
-  if $v = "b" then j = 100
-  if $v = "c" then j = 200
-  if $v = "d" then j = 300
-  j = j + 65000
-  if $v = "a" then w = a
-  if $v = "b" then w = b
-  if $v = "c" then w = c
-  if $v = "d" then w = d
+BOXDATA:
+201 186 204 186 186 186 186 186 186 200
+187 186 185 186 186 186 186 186 186 188
+
+ARRAYGET:
+  W = & $V
+  PEEK J W
+  J = J - 65
+  J = J * 100
+  J = J + 65000
+  if $V = "a" then w = a
+  if $V = "b" then w = b
+  if $V = "c" then w = c
+  if $V = "d" then w = d
   if w > 99 then $e = "Array over maximum"
   if w < 0 then $e = "Number below zero"
   if w > 99 then goto errbox
   if w < 0 then goto errbox
   j = j + w
   peek v j
-  return
-arrayput:
-  if $v = "a" then j = 0
-  if $v = "b" then j = 100
-  if $v = "c" then j = 200
-  if $v = "d" then j = 300
+RETURN
+
+ARRAYPUT:
+  W = & $V
   j = j + 65000
-  if $v = "a" then w = a
-  if $v = "b" then w = b
-  if $v = "c" then w = c
-  if $v = "d" then w = d
-  if w > 99 then $e = "Array over maximum"
-  if w < 0 then $e = "Number below zero"
-  if w > 99 then goto errbox
-  if w < 0 then goto errbox
+  IF $V = "a" then w = a
+  IF $V = "b" then w = b
+  IF $V = "c" then w = c
+  IF $V = "d" then w = d
+  IF w > 99 then $e = "Array over maximum"
+  IF w < 0 then $e = "Number below zero"
+  IF w > 99 then goto errbox
+  IF w < 0 then goto errbox
   j = j + w
   poke v j
-  return
-xput:
-  $e = "XPUT: invalid location!"
-  if e < 0 then goto errbox
-  if e > 8096 then goto errbox
-  j = 32767 - e
+RETURN
+
+XPUT:
+  $E = "XPUT: invalid location!"
+  IF V < 0 then goto errbox
+  IF V > 8096 then goto errbox
+  J = 32767 - V
   poke v j
-  return
-xget:
-  $e = "XGET: invalid location!"
-  if e < 0 then goto errbox
-  if e > 8096 then goto errbox
+RETURN
+
+XGET:
+  $E = "XGET: invalid location!"
+  if v < 0 then goto errbox
+  if v > 8096 then goto errbox
   j = 32767 - e
   peek v j
-  return
+RETURN
+
+MENUBOX:
+  GOSUB OPENBOX
+  V = 11
+  GOSUB MENUDRAW
+  MENULOOP:
+    WAITKEY W
+    IF W = 1 AND V = 11 THEN GOTO MENULOOP
+    IF W = 2 AND V = 16 THEN GOTO MENULOOP
+    IF W = 1 THEN V = V - 1
+    IF W = 2 THEN V = V + 1
+    IF W < 3 THEN GOSUB MENUDRAW
+    IF W = 13 THEN GOTO MENUEND
+  GOTO MENULOOP
+  MENUDRAW:
+    FOR W = 11 TO 16
+      INK C
+      MOVE 22 W
+      IF W = V THEN INK H
+      GOSUB MENUITEM
+      PRINT $J
+    NEXT W
+  RETURN
+  MENUITEM:
+    IF W = 11 THEN $J = $5
+    IF W = 12 THEN $J = $6
+    IF W = 13 THEN $J = $7
+    IF W = 14 THEN $J = $8
+    IF W = 15 THEN $J = $9
+  RETURN
+  MENUEND:
+    GOSUB MENUITEM
+    IF $J = "" THEN GOTO MENULOOP
+    V = V - 10
+  GOSUB CLOSEBOX
+RETURN
+
 loadbox:
-  poke v 65434
-  u = 11453
-  findend:
-    u = u + 1
-    peek v u
-    if v > 0 then goto findend
-  u = u - 2
-  poke 0 65435
-  poke 1 65436
-  peek w 65437
-  poke 0 65438
-  gosub boxsave
-  move 22 9
-  print $t
-  gosub aniopen
-  gosub box
-  move 22 9
-  print $t
-  menufunc:
-    poke 0 65424
-    if v < 6 then gosub menua
-    if v = 6 then gosub loadback
-    if v = 6 then poke 0 65438
-rem    if v = 6 then gosub lbhelper
-    if v = 6 then goto menufunc
-    if v = 7 then gosub loadforw
-    if v = 7 then poke 4 65438
-rem    if v = 7 then gosub lbhelper
-    if v = 7 then goto menufunc
-  poke 0 65436
-  x = s
-  y = r
-  peek v 65434
-  load $i v
-  $e = "File not found! Has disk changed?"
-  j = r
-  v = s
-  r = y
-  s = x
-  if j = 1 then gosub errbox
-  gosub aniclose
-  gosub boxrest
-  return 
-lbhelper:
-  poke 1 65424
-  poke w 65438
-  if w > 4 then gosub loadint
-  if w > 4 then gosub menuloop
-  return
-menubox:
-  gosub boxsave
-  move 22 9
-  print $t
-  gosub aniopen
-  gosub box
-  move 22 9
-  print $t
-  poke 0 65436
-  poke 0 65438
-  menufun2:
-    gosub menua
-    if v < 6 then goto menufun3
-    if v = 6 then poke 0 65438
-    if v = 7 then poke 4 65438
-  goto menufun2
-  menufun3:
-  poke v 65432
-  gosub aniclose
-  gosub boxrest  
-  peek v 65432
-  return
-menua:
-  peek j 65436
-  if j = 1 then goto loadint
-  move 22 11
-  print $b
-  move 22 12
-  print $c
-  move 22 13
-  print $e
-  move 22 14
-  print $f
-  move 22 15
-  print $g
-  loadret:
-  move 22 16
-  print "Press enter to select."
-  poke c 65525
-  peek w 65438
-  w = w + 11
-  y = 9
-  for x = 22 to 58
-    gosub colour
-  next x
-  for y = 11 to 16
-    for x = 22 to 58
-      gosub colour
-      if w = y then gosub highlight
-    next x
-  next y
-  w = w - 11
-  menuloop:
-    waitkey j
-    x = 0
-    v = 0
-    if j = 1 then gosub menublan
-    if j = 1 then w = w - 1
-    if w < 0 then x = 1
-    if x = 1 then w = 5 
-    if x = 1 then goto refafter
-    if j = 1 then poke w 65438
-    if j = 1 then gosub menuchan
-    if j = 1 then goto menuloop
-    if j = 2 then gosub menublan
-    if j = 2 then w = w + 1
-    if w > 4 then x = 2
-    if x = 2 then w = 6
-    if x = 2 then goto refafter
-    if j = 2 then poke w 65438
-    if j = 2 then gosub menuchan
-    if j = 2 then goto menuloop
-    if j = 13 then goto refaftr2
-    if j = 27 then gosub endprog
-  goto menuloop
-  refaftr3:
-    peek w 65438
-    w = w + 11
-    move 23 w
-    $i = "            "
-    x = & $i
-    y = 23
-    getfilen:
-      move y w
-      curschar j
-      if j < 33 then poke 0 x
-      if j < 33 then return
-      poke j x
-      x = x + 1
-      y = y + 1
-      goto getfilen
-  refaftr2:
-    peek w 65436
-    if w = 1 then gosub refaftr3
-    peek w 65438
-    v = w + 1
-    return
-  refafter:
-    poke w 65438
-    for y = 11 to 16
-      move 21 y
-      for x = 21 to 58
-        print " ";
-      next x
-    next y
-    peek w 65438
-    if w = 4 then gosub menuchan
-    if w = 6 then gosub menuchan
-    v = w + 1
-    return
-  menublan:
-    poke c 65525
-    for y = 11 to 16
-      for x = 22 to 58
-        move x y
-        curschar v
-        poke v 65520
-        call 65515
-      next x
-    next y
-    return
-  menuchan:
-    poke w 65433
-    peek w 65436
-    if w = 1 then goto chanload
-    peek w 65433
-    if w = 6 then w = 4
-    if w = 5 then w = 0
-    poke w 65433
-    chanload:
-    peek w 65433
-    w = w + 11
-    v = h * 16
-    v = v + c
-    poke v 65525
-    for y = 11 to 16
-      for x = 22 to 58
-        if w = y then move x y
-        if w = y then curschar v
-        if w = y then poke v 65520
-        if w = y then call 65515
-      next x
-    next y
-    w = w - 11
-    peek w 65438
-    return
-loadint:
-  move 22 9
-  print "Select a file to load..."
-  w = 0
-  peek j 65435
-  j = j + 11454
-  x = 23
-  y = 11
-  move x y
-  fncon:
-    move x y
-    peek i j
-    if i = 0 then goto lintret
-    print chr i
-    if j > u then goto loadover
-    if j > u then gosub loadback
-    if j > u then goto lintret
-    if i = ',' then w = w + 1
-    if i = ',' then move x y
-    if i = ',' then print " "
-    if i = ',' then x = 22
-    if i = ',' then y = y + 1
-    if w = 5 then goto lintret  
-    x = x + 1
-    j = j + 1
-  goto fncon
-  lintret:
-    peek j 65424
-    if j = 0 then goto loadret
-    if j = 1 then return
-  return
-loadover:
-  gosub loadback
-  poke u 65435
-  goto loadret
+  GOSUB BOXOPEN
+  X = 65408
+  FOR Y = 1 TO 10
+    READ GETLIST Y J
+    POKE J X
+    X = X + 1
+  NEXT Y
+  CALL 65408
+  PEEK X 65432
+  PEEK Y 65433
+  W = X * 256
+  W = W + Y
+  FILELIST:
+  FOR Y = 11 TO 15
+    MOVE 22 Y
+    GOSUB GETFILE
+    GOSUB NEXTFILE
+  NEXT Y
+  FOR Y = 1 TO 5
+    GOSUB PREVFILE
+  NEXT Y
+  GOTO FILELIST
+  GETFILE:
+    X = W
+    GETFILE2:
+    PEEK J X
+    IF J = ',' THEN RETURN
+    IF J = 0 THEN RETURN
+    PRINT CHR J ;
+    X = X + 1
+  GOTO GETFILE2
 loadforw:
   x = 0 
   j = 0
@@ -817,3 +648,5 @@ loadback:
     if y = 2 then poke j 65435
     if y = 2 then return
   goto lmbc
+  GETLIST:
+  96 232 62 0 191 152 255 171 97 195
