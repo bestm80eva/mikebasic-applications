@@ -1,4 +1,4 @@
-REM >>>>MIKEBASIC-PLUS-PLUS-LIBRARY<<<
+REM >>>MIKEBASIC-PLUS-PLUS-LIBRARY<<<
 MOVE 0 0
 PRINT "This is a library and not for direct use!"
 END
@@ -558,6 +558,8 @@ MENUBOX:
     IF W = 2 THEN V = V + 1
     IF W < 3 THEN GOSUB MENUDRAW
     IF W = 13 THEN GOTO MENUEND
+    IF W = 27 THEN $I = ""
+    IF W = 27 THEN RETURN
   GOTO MENULOOP
   MENUDRAW:
     FOR W = 11 TO 16
@@ -582,7 +584,8 @@ MENUBOX:
   GOSUB CLOSEBOX
 RETURN
 
-loadbox:
+LOADBOX:
+  POKE V 65534
   GOSUB BOXOPEN
   X = 65408
   FOR Y = 1 TO 10
@@ -595,16 +598,35 @@ loadbox:
   PEEK Y 65433
   W = X * 256
   W = W + Y
-  FILELIST:
-  FOR Y = 11 TO 15
-    MOVE 22 Y
-    GOSUB GETFILE
-    GOSUB NEXTFILE
-  NEXT Y
-  FOR Y = 1 TO 5
-    GOSUB PREVFILE
-  NEXT Y
-  GOTO FILELIST
+  V = 11
+  GOSUB DRAWFL
+  LOADLOOP:
+    WAITKEY Y
+    IF Y = 1 AND V = 11 THEN GOSUB DRAWFL
+    IF Y = 2 AND V = 16 THEN GOSUB DRAWFL
+    IF Y = 1 THEN V = V - 1
+    IF Y = 2 THEN V = V + 1
+    IF Y < 3 THEN GOSUB FLCHSEL
+    IF Y = 13 THEN GOSUB GETFN
+    IF Y = 13 THEN GOTO DOLOAD
+    IF Y = 27 THEN RETURN
+  GOTO LOADLOOP
+  FLCHSEL:
+    FOR Y = 11 TO 16
+       INK C
+       IF Y = C THEN INK H
+  DRAWFL:
+    FOR Y = 11 TO 16
+      INK C
+      IF Y = V THEN INK H
+      MOVE 22 Y
+      GOSUB GETFILE
+      GOSUB NEXTFILE
+    NEXT Y
+    FOR Y = 1 TO 5
+      GOSUB PREVFILE
+    NEXT Y
+  RETURN
   GETFILE:
     X = W
     GETFILE2:
@@ -614,39 +636,56 @@ loadbox:
     PRINT CHR J ;
     X = X + 1
   GOTO GETFILE2
-loadforw:
-  x = 0 
-  j = 0
-  peek j 65435
-  j = j + 11454
-  lmfc:
-    peek x j
-    j = j + 1
-    if x = 44 then j = j - 11454
-    if x = 44 then poke j 65435
-    if x = 44 then return
-  goto lmfc
-loadback:
-  x = 0
-  j = 0
-  y = 0
-  peek j 65435
-  j = j + 11454
-  lmbc:
-    peek x j
-    j = j - 1
-    if x = 0 then j = 11008
-    if x = 0 then poke j 65435
-    if x = 0 then return
-    if j < 0 then y = 3
-    if y = 3 then j = 0
-    if y = 3 then poke 0 65435
-    if y = 3 then return
-    if x = ',' then y = y + 1
-    if y = 2 then j = j - 11454
-    if y = 2 then j = j + 2
-    if y = 2 then poke j 65435
-    if y = 2 then return
-  goto lmbc
-  GETLIST:
-  96 232 62 0 191 152 255 171 97 195
+  GETFN:
+    X = & $I
+    GETFN2:
+    PEEK J W
+    IF J = ',' THEN J = 0
+    POKE J X
+    IF J = 0 THEN RETURN
+    X = X + 1
+    W = W + 1
+  GOTO GETFN2
+NEXTFILE:
+  W = W + 1
+  PEEK X W
+  IF X = ',' THEN W = W + 1
+  IF X = ',' THEN RETURN
+GOTO NEXTFILE
+PREVFILE:
+  W = W - 1
+  PREVFIL2:
+  W = W - 1
+  PEEK X W
+  IF X = ',' THEN W = W + 1
+  IF X = ',' THEN RETURN
+GOTO PREVFIL2
+DOLOAD:
+  PEEK V 65534
+  LOAD $I V
+  IF R = 1 THEN $E = "Cannot load file. Did disk change?"
+  IF R = 1 THEN GOTO ERRBOX
+RETURN
+GETLIST:
+96 232 62 0 191 152 255 171 97 195
+SAVEBOX:
+  V = 1
+  GOSUB INPBOX
+  $E = ""
+  IF $I = "" THEN $E = "Filename is blank"
+  LEN $I J
+  IF J < 4 THEN $E = "Filename is too short"
+  IF $E = "" THEN GOTO CONT1
+  GOTO ERRBOX
+  CONT1:
+  J = R
+  SAVE $I V
+  IF R = 1 THEN $E = "Invalid Filename"
+  IF R = 2 THEN $E = "Read-only Disk"
+  R = J
+  IF $E = "" THEN GOTO CONT2
+  GOTO ERRBOX
+  CONT2:
+REM  $5 = "File loaded successfully"
+REM GOTO NOTEBOX
+RETURN 
