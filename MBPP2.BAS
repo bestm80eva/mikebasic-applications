@@ -1,66 +1,36 @@
 REM >>>MIKEBASIC-PLUS-PLUS-LIBRARY<<<
+REM Developed by Joshua Beck.
+REM Released under the GNU General Public Licence revision 3.
+REM Requires MikeOS version 4.3 beta 5 or greater.
+REM Send bug reports or feedback to mikeosdeveloper@gmail.com
+
 MOVE 0 0
 PRINT "This is a library and not for direct use!"
 END
-boxsave:
-  j = 64610
-  for y = 8 to 17
-    move 20 y
-    for x = 20 to 59
-      move x y
-      curschar w
-      poke w j
-      print " ";
-      j = j + 1
-    next x
-  next y
-return
 
-boxrest:
-  j = 64610
-  for y = 8 to 17
-    for x = 20 to 59
-      move x y
-      peek w j
-      print chr w ;
-      j = j + 1
-    next x
-  next y
-return
-
-OPENBOX:
-  POKE V 65418
-  POKE J 65419
-  POKE W 65420
-  POKE X 65421
-  POKE Y 65422
-  GOSUB BOXSAVE
-  IF C < 0 THEN C = 7
-  IF C > 15 THEN C = 7
-  H = H * 16
-  H = H + C
-  CURSOR OFF
-  INK C
-  MOVE 22 9
-  PRINT $T
-  GOSUB ANIOPEN
-  GOSUB BOX
-  MOVE 22 9
-  PRINT $T
-  PEEK V 65418
-RETURN
-
-CLOSEBOX:
-  CURSOR OFF
-  GOSUB ANICLOSE
-  INK 7
-  H = H / 16
-  GOSUB BOXSAVE
-  PEEK J 65419
-  PEEK W 65420
-  PEEK X 65421
-  PEEK Y 65422
-RETURN
+ancitext:
+  ink c
+  poke x 65431
+ancitex2:
+  if x > w then y = y + 1
+  if x > w then peek x 65431
+  if x > 78 then y = y + 1
+  if x > 78 then peek x 65431
+  if y > 23 then return
+  move x y
+  peek j v
+  if j = 0 then return
+  if j = 1 then v = v + 1
+  if j = 1 then goto ancitex2
+  if j = 7 then j = 255
+  if j = 10 then y = y + 1
+  if j = 10 then peek x 65431
+  if j = 10 then v = v + 1
+  if j = 10 then goto ancitex2
+  print chr j ;
+  x = x + 1
+  v = v + 1
+goto ancitex2
   
 aniclose:
   if $y = "DISABLE" then return
@@ -77,6 +47,35 @@ aniclose:
   gosub blockbox
   pause 1
   return
+
+aniend:
+  if $y = "DISABLE" then return
+  j = 176
+  gosub blockscr
+  pause 1
+  j = 177
+  gosub blockscr
+  pause 1
+  j = 178
+  gosub blockscr
+  pause 1
+  j = 219
+  gosub blockscr
+  pause 5
+  j = 178
+  gosub blockscr
+  pause 1
+  j = 177
+  gosub blockscr
+  pause 1
+  j = 176
+  gosub blockscr
+  pause 1
+  j = 0
+  gosub blockscr
+  pause 1
+return
+
 aniopen:
   if $y = "DISABLE" then return
   j = 219
@@ -92,6 +91,7 @@ aniopen:
   gosub blockbox
   pause 1
   return
+
 anistart:
   if $y = "DISABLE" then return
   j = 176
@@ -137,74 +137,39 @@ anistart:
   j = 176
   gosub blockbor
   return
-aniend:
-  if $y = "DISABLE" then return
-  j = 176
-  gosub blockscr
-  pause 1
-  j = 177
-  gosub blockscr
-  pause 1
-  j = 178
-  gosub blockscr
-  pause 1
-  j = 219
-  gosub blockscr
-  pause 5
-  j = 178
-  gosub blockscr
-  pause 1
-  j = 177
-  gosub blockscr
-  pause 1
-  j = 176
-  gosub blockscr
-  pause 1
-  j = 0
-  gosub blockscr
-  pause 1
-return
 
-ancitext:
-  ink c
-  poke x 65431
-ancitex2:
-  if x > w then y = y + 1
-  if x > w then peek x 65431
-  if x > 78 then y = y + 1
-  if x > 78 then peek x 65431
-  if y > 23 then return
-  move x y
-  peek j v
-  if j = 0 then return
-  if j = 1 then v = v + 1
-  if j = 1 then goto ancitex2
-  if j = 7 then j = 255
-  if j = 10 then y = y + 1
-  if j = 10 then peek x 65431
-  if j = 10 then v = v + 1
-  if j = 10 then goto ancitex2
-  print chr j ;
-  x = x + 1
-  v = v + 1
-goto ancitex2
+ARRAYGET:
+  W = & $V
+  PEEK J W
+  J = J - 65
+  J = J * 100
+  J = J + 65000
+  if $V = "a" then w = a
+  if $V = "b" then w = b
+  if $V = "c" then w = c
+  if $V = "d" then w = d
+  if w > 99 then $e = "Array over maximum"
+  if w < 0 then $e = "Number below zero"
+  if w > 99 then goto errbox
+  if w < 0 then goto errbox
+  j = j + w
+  peek v j
+RETURN
 
-pictotxt:
-  for x = 0 to 19
-    for y = 0 to 76
-      peek w v
-      if w = 0 then w = 32
-      poke w v
-      v = v + 1
-    next y
-    poke 10 v
-    v = v + 1
-    poke 1 v
-    v = v + 1
-    poke 1 v
-    v = v + 1
-  next x
-return
+ARRAYPUT:
+  W = & $V
+  j = j + 65000
+  IF $V = "a" then w = a
+  IF $V = "b" then w = b
+  IF $V = "c" then w = c
+  IF $V = "d" then w = d
+  IF w > 99 then $e = "Array over maximum"
+  IF w < 0 then $e = "Number below zero"
+  IF w > 99 then goto errbox
+  IF w < 0 then goto errbox
+  j = j + w
+  poke v j
+RETURN
 
 ASKBOX:
   GOSUB OPENBOX
@@ -221,6 +186,7 @@ ASKBOX:
   move 27 16
   print "--Yes--        --No--"
   poke 1 65423
+  V = 1
   gosub askdraw
   askloop:
     waitkey j
@@ -260,128 +226,53 @@ askdraw:
   print "--No--"
 return
 
-MESBOX:
-  GOSUB OPENBOX
-  move 22 11
-  print $5
-  move 22 12
-  print $6
-  move 22 13
-  print $7
-  move 22 14 
-  print $8
-  move 22 15
-  print $9
-  move 22 16
-  print "Press any key to continue..."
-  waitkey j
-  GOSUB CLOSEBOX
-return
-
-INPBOX:
-  GOSUB OPENBOX
-  move 22 12
-  print $5
-  move 22 13
-  print $6
-  move 22 14
-  print ">"
-  move 23 14
-  cursor on
-  $i = ""
-  if v = 1 then input $I
-  if v = 0 then input v
-  GOSUB CLOSEBOX
-return
-
-ERRBOX:
-  $J = $T
-  $T = "Error"
-  GOSUB OPENBOX
-  move 22 12
-  print $E
-  MOVE 22 14
-  PRINT "Press escape to end program."
-  MOVE 22 15
-  print "Press any other key to continue."
-  cursor on
-  move 53 15
-  waitkey j
-  if j = 27 then gosub endprog
-  GOSUB CLOSEBOX
-  $T = $J
-return
-
-DINBOX:
-  GOSUB OPENBOX
-  move 22 11
-  print $5
-  move 22 12
-  print ">"
-  move 23 12
-  cursor on
-  if v = 0 then input a
-  if v = 1 then input $7
-  move 22 13
-  print $6
-  move 22 14
-  print ">"
-  move 23 14
-  if v = 0 then input b
-  if v = 1 then input $8
-  GOSUB CLOSEBOX
-return
-
-NUMBOX:
-  GOSUB OPENBOX
-  if $5 = "" then goto numboxa
-  move 22 11
-  print $5
-  move 22 12
-  print a
-  numboxa:
-  if $6 = "" then goto numboxb
-  move 22 13
-  print $6
-  move 22 14
-  print b
-  numboxb:
-  move 22 16
-  print "Press any key to continue..."
-  waitkey j
-  GOSUB CLOSEBOX
-return
-
-REFRESH:
-  cls
-  gosub border
-  gosub title
-return
-
-ENDPROG:
-  z = 7
-  gosub aniend
-  cls
-  cursor on
-end
-
 blockbor:
   INK Z
   for x = 0 to 79
     move x 0
-    PRINT CHR J
+    PRINT CHR J ;
     move x 2
-    PRINT CHR J
+    PRINT CHR J ;
     move x 24
-    PRINT CHR J
+    PRINT CHR J ;
   next x
   for x = 1 to 23
     move 0 x
-    PRINT CHR J
+    PRINT CHR J ;
     move 79 x
-    PRINT CHR J
+    PRINT CHR J ;
   next x
 return
+
+BLOCKBOX:
+  INK T
+  FOR X = 8 TO 17
+    MOVE 20 X
+    PRINT CHR J
+  NEXT X
+  FOR X = 21 TO 58
+    MOVE X 8
+    PRINT CHR J
+    MOVE X 10
+    PRINT CHR J
+    MOVE X 17
+    PRINT CHR J
+  NEXT X
+  FOR X = 8 TO 17
+    MOVE 59 X
+    PRINT CHR J
+  NEXT X
+RETURN
+
+BLOCKSCR:
+  INK Z
+  MOVE 0 0
+  FOR X = 0 to 79
+    FOR Y = 0 to 24
+      PRINT CHR J ;
+    NEXT Y
+  NEXT X
+RETURN
 
 BORDER:
   J = 0
@@ -415,56 +306,6 @@ RETURN
 
 BORDERDATA:
 218 179 195 191 179 180
-
-BLOCKSCR:
-  INK Z
-  FOR X = 0 to 79
-    FOR Y = 0 to 24
-      MOVE X Y
-      PRINT CHR J
-    NEXT Y
-  NEXT X
-RETURN
-
-SETTITLE:
-  POKE Z 65439 
-  Y = & $T
-  FOR X = 65440 TO 65514
-    PEEK W X
-    POKE W Y
-    Y = Y + 1
-  NEXT X
-RETURN
-
-TITLE:
-  PEEK J 65439
-  INK J
-  MOVE 2 1
-  FOR X = 65440 TO 65514
-    PEEK J X
-    PRINT CHR J ;
-  NEXT X
-RETURN
-
-BLOCKBOX:
-  INK T
-  FOR X = 8 TO 17
-    MOVE 20 X
-    PRINT CHR J
-  NEXT X
-  FOR X = 21 TO 58
-    MOVE X 8
-    PRINT CHR J
-    MOVE X 10
-    PRINT CHR J
-    MOVE X 17
-    PRINT CHR J
-  NEXT X
-  FOR X = 8 TO 17
-    MOVE 59 X
-    PRINT CHR J
-  NEXT X
-RETURN
 
 BOX:
   INK T
@@ -502,101 +343,118 @@ BOXDATA:
 201 186 204 186 186 186 186 186 186 200
 187 186 185 186 186 186 186 186 186 188
 
-ARRAYGET:
-  W = & $V
-  PEEK J W
-  J = J - 65
-  J = J * 100
-  J = J + 65000
-  if $V = "a" then w = a
-  if $V = "b" then w = b
-  if $V = "c" then w = c
-  if $V = "d" then w = d
-  if w > 99 then $e = "Array over maximum"
-  if w < 0 then $e = "Number below zero"
-  if w > 99 then goto errbox
-  if w < 0 then goto errbox
-  j = j + w
-  peek v j
+BOXSAVE:
+  INK 0
+  V = 64200
+  j = 64600
+  for y = 8 to 17
+    move 20 y
+    for x = 20 to 59
+      curschar w
+      poke w j
+      CURSCOL W
+      POKE W V
+      print " ";
+      j = j + 1
+      V = V + 1
+    next x
+  next y
+return
+
+BOXREST:
+  V = 64200
+  j = 64600
+  for y = 8 to 17
+    MOVE 20 Y
+    for x = 20 to 59
+      PEEK W V
+      INK W
+      peek w j
+      print chr w ;
+      j = j + 1
+      V = V + 1
+    next x
+  next y
+return
+
+CLOSEBOX:
+  CURSOR OFF
+  GOSUB ANICLOSE
+  INK 7
+  H = H / 16
+  GOSUB BOXREST
+  PEEK J 65419
+  PEEK W 65420
+  PEEK X 65421
+  PEEK Y 65422
 RETURN
 
-ARRAYPUT:
-  W = & $V
-  j = j + 65000
-  IF $V = "a" then w = a
-  IF $V = "b" then w = b
-  IF $V = "c" then w = c
-  IF $V = "d" then w = d
-  IF w > 99 then $e = "Array over maximum"
-  IF w < 0 then $e = "Number below zero"
-  IF w > 99 then goto errbox
-  IF w < 0 then goto errbox
-  j = j + w
-  poke v j
-RETURN
-
-XPUT:
-  $E = "XPUT: invalid location!"
-  IF V < 0 then goto errbox
-  IF V > 8096 then goto errbox
-  J = 32767 - V
-  poke v j
-RETURN
-
-XGET:
-  $E = "XGET: invalid location!"
-  if v < 0 then goto errbox
-  if v > 8096 then goto errbox
-  j = 32767 - e
-  peek v j
-RETURN
-
-MENUBOX:
+DINBOX:
+  $E = "INPBOX: Invalid input type."
+  IF V > 1 THEN GOTO ERRBOX
+  IF V < 0 THEN GOTO ERRBOX
   GOSUB OPENBOX
-  V = 11
-  GOSUB MENUDRAW
-  MENULOOP:
-    WAITKEY W
-    IF W = 1 AND V = 11 THEN GOTO MENULOOP
-    IF W = 2 AND V = 16 THEN GOTO MENULOOP
-    IF W = 1 THEN V = V - 1
-    IF W = 2 THEN V = V + 1
-    IF W < 3 THEN GOSUB MENUDRAW
-    IF W = 13 THEN GOTO MENUEND
-    IF W = 27 THEN $I = ""
-    IF W = 27 THEN RETURN
-  GOTO MENULOOP
-  MENUDRAW:
-    J = W
-    W = V
-    GOSUB MENUITEM
-    IF $J = "" AND J = 1 THEN V = V + 1
-    IF $J = "" AND J = 2 THEN V = V - 1
-    IF $J = "" THEN W = 0
-    IF $J = "" THEN RETURN
-    FOR W = 11 TO 16
-      INK C
-      MOVE 22 W
-      IF W = V THEN INK H
-      GOSUB MENUITEM
-      PRINT $J
-    NEXT W
-  RETURN
-  MENUITEM:
-    IF W = 11 THEN $J = $5
-    IF W = 12 THEN $J = $6
-    IF W = 13 THEN $J = $7
-    IF W = 14 THEN $J = $8
-    IF W = 15 THEN $J = $9
-  RETURN
-  MENUEND:
-    W = V
-    GOSUB MENUITEM
-    IF $J = "" THEN GOTO MENULOOP
-    $I = $J
-    V = V - 10
+  move 22 11
+  print $5
+  move 22 12
+  print ">"
+  move 23 12
+  cursor on
+  if v = 0 then input a
+  if v = 1 then input $7
+  move 22 13
+  print $6
+  move 22 14
+  print ">"
+  move 23 14
+  if v = 0 then input b
+  if v = 1 then input $8
   GOSUB CLOSEBOX
-RETURN
+return
+
+ENDPROG:
+  z = 7
+  gosub aniend
+  cls
+  cursor on
+end
+
+ERRBOX:
+  $J = $T
+  $T = "Error"
+  GOSUB OPENBOX
+  move 22 12
+  print $E
+  MOVE 22 14
+  PRINT "Press escape to end program."
+  MOVE 22 15
+  print "Press any other key to continue."
+  cursor on
+  move 53 15
+  waitkey j
+  if j = 27 then gosub endprog
+  GOSUB CLOSEBOX
+  $T = $J
+return
+
+INPBOX:
+  $E = "INPBOX: Invalid input type."
+  IF V > 1 THEN GOTO ERRBOX
+  IF V < 0 THEN GOTO ERRBOX
+  GOSUB OPENBOX
+  move 22 12
+  print $5
+  move 22 13
+  print $6
+  move 22 14
+  print ">"
+  move 23 14
+  cursor on
+  $i = ""
+  if v = 1 then input $I
+  if v = 0 then input v
+  GOSUB CLOSEBOX
+return
 
 LOADBOX:
   POKE V 65534
@@ -682,8 +540,143 @@ DOLOAD:
   IF R = 1 THEN $E = "Cannot load file. Did disk change?"
   IF R = 1 THEN GOTO ERRBOX
 RETURN
+
 GETLIST:
 96 232 62 0 191 152 255 171 97 195
+
+MENUBOX:
+  GOSUB OPENBOX
+  V = 11
+  GOSUB MENUDRAW
+  MENULOOP:
+    WAITKEY W
+    IF W = 1 AND V = 11 THEN GOTO MENULOOP
+    IF W = 2 AND V = 15 THEN GOTO MENULOOP
+    IF W = 1 THEN V = V - 1
+    IF W = 2 THEN V = V + 1
+    IF W < 3 THEN GOSUB MENUDRAW
+    IF W = 13 THEN GOTO MENUEND
+    IF W = 27 THEN $I = ""
+    IF W = 27 THEN RETURN
+  GOTO MENULOOP
+  MENUDRAW:
+    J = W
+    W = V
+    GOSUB MENUITEM
+    IF $J = "" AND J = 1 THEN V = V + 1
+    IF $J = "" AND J = 2 THEN V = V - 1
+    IF $J = "" THEN W = 0
+    IF $J = "" THEN RETURN
+    FOR W = 11 TO 15
+      INK C
+      MOVE 22 W
+      IF W = V THEN INK H
+      GOSUB MENUITEM
+      PRINT $J
+    NEXT W
+    MOVE 22 16
+    INK C
+    PRINT "Press enter to select an option."
+  RETURN
+  MENUITEM:
+    IF W = 11 THEN $J = $5
+    IF W = 12 THEN $J = $6
+    IF W = 13 THEN $J = $7
+    IF W = 14 THEN $J = $8
+    IF W = 15 THEN $J = $9
+  RETURN
+  MENUEND:
+    W = V
+    GOSUB MENUITEM
+    IF $J = "" THEN GOTO MENULOOP
+    $I = $J
+    V = V - 10
+  GOSUB CLOSEBOX
+RETURN
+
+MESBOX:
+  GOSUB OPENBOX
+  move 22 11
+  print $5
+  move 22 12
+  print $6
+  move 22 13
+  print $7
+  move 22 14 
+  print $8
+  move 22 15
+  print $9
+  move 22 16
+  print "Press any key to continue..."
+  waitkey j
+  GOSUB CLOSEBOX
+return
+
+NUMBOX:
+  GOSUB OPENBOX
+  if $5 = "" then goto numboxa
+  move 22 11
+  print $5
+  move 22 12
+  print a
+  numboxa:
+  if $6 = "" then goto numboxb
+  move 22 13
+  print $6
+  move 22 14
+  print b
+  numboxb:
+  move 22 16
+  print "Press any key to continue..."
+  waitkey j
+  GOSUB CLOSEBOX
+return
+
+OPENBOX:
+  POKE V 65418
+  POKE J 65419
+  POKE W 65420
+  POKE X 65421
+  POKE Y 65422
+  GOSUB BOXSAVE
+  IF C < 0 THEN C = 7
+  IF C > 15 THEN C = 7
+  H = H * 16
+  H = H + C
+  CURSOR OFF
+  INK C
+  MOVE 22 9
+  PRINT $T
+  GOSUB ANIOPEN
+  GOSUB BOX
+  MOVE 22 9
+  PRINT $T
+  PEEK V 65418
+RETURN
+
+pictotxt:
+  for x = 0 to 19
+    for y = 0 to 76
+      peek w v
+      if w = 0 then w = 32
+      poke w v
+      v = v + 1
+    next y
+    poke 10 v
+    v = v + 1
+    poke 1 v
+    v = v + 1
+    poke 1 v
+    v = v + 1
+  next x
+return
+
+REFRESH:
+  cls
+  gosub border
+  gosub title
+return
+
 SAVEBOX:
   V = 1
   GOSUB INPBOX
@@ -702,6 +695,44 @@ SAVEBOX:
   IF $E = "" THEN GOTO CONT2
   GOTO ERRBOX
   CONT2:
-REM  $5 = "File loaded successfully"
-REM GOTO NOTEBOX
+  REM $5 = "File loaded successfully"
+  REM GOTO NOTEBOX
 RETURN 
+
+SETTITLE:
+  POKE Z 65439 
+  Y = & $T
+  FOR X = 65440 TO 65514
+    PEEK W X
+    POKE W Y
+    Y = Y + 1
+  NEXT X
+RETURN
+
+TITLE:
+  PEEK J 65439
+  INK J
+  MOVE 2 1
+  FOR X = 65440 TO 65514
+    PEEK J X
+    PRINT CHR J ;
+  NEXT X
+RETURN
+
+XPUT:
+  $E = "XPUT: invalid location!"
+  IF V < 0 then goto errbox
+  IF V > 8096 then goto errbox
+  J = 32767 - V
+  poke v j
+RETURN
+
+XGET:
+  $E = "XGET: invalid location!"
+  if v < 0 then goto errbox
+  if v > 8096 then goto errbox
+  j = 32767 - e
+  peek v j
+RETURN
+
+REM
