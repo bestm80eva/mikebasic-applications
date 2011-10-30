@@ -51,6 +51,7 @@ OPENBOX:
 RETURN
 
 CLOSEBOX:
+  CURSOR OFF
   GOSUB ANICLOSE
   INK 7
   H = H / 16
@@ -59,7 +60,6 @@ CLOSEBOX:
   PEEK W 65420
   PEEK X 65421
   PEEK Y 65422
-  CURSOR OFF
 RETURN
   
 aniclose:
@@ -208,6 +208,7 @@ return
 
 ASKBOX:
   GOSUB OPENBOX
+  move 22 11
   print $5
   move 22 12
   print $6
@@ -219,7 +220,7 @@ ASKBOX:
   print $9
   move 27 16
   print "--Yes--        --No--"
-  poke 0 65423
+  poke 1 65423
   gosub askdraw
   askloop:
     waitkey j
@@ -249,11 +250,11 @@ swright:
   gosub askdraw
   return
 askdraw:
-  move 26 16
+  move 27 16
   if v = 0 then ink h
   if v = 1 then ink c
   print "--Yes--"
-  move 41 16
+  move 42 16
   if v = 0 then ink c
   if v = 1 then ink h
   print "--No--"
@@ -304,15 +305,16 @@ ERRBOX:
   MOVE 22 15
   print "Press any other key to continue."
   cursor on
-  move 48 14
+  move 53 15
   waitkey j
-  if k = 27 then gosub endprog
+  if j = 27 then gosub endprog
   GOSUB CLOSEBOX
   $T = $J
 return
 
 DINBOX:
   GOSUB OPENBOX
+  move 22 11
   print $5
   move 22 12
   print ">"
@@ -338,7 +340,7 @@ NUMBOX:
   move 22 12
   print a
   numboxa:
-  if $c = "" then goto numboxb
+  if $6 = "" then goto numboxb
   move 22 13
   print $6
   move 22 14
@@ -409,8 +411,10 @@ BORDER:
     MOVE X 79
     PRINT CHR J
   NEXT X
-  BORDERDATA:
-  218 179 195 191 179 180
+RETURN
+
+BORDERDATA:
+218 179 195 191 179 180
 
 BLOCKSCR:
   INK Z
@@ -491,6 +495,7 @@ BOX:
     move 21 x
     print "                                      "
   next x
+  INK C
 RETURN
 
 BOXDATA:
@@ -562,6 +567,13 @@ MENUBOX:
     IF W = 27 THEN RETURN
   GOTO MENULOOP
   MENUDRAW:
+    J = W
+    W = V
+    GOSUB MENUITEM
+    IF $J = "" AND J = 1 THEN V = V + 1
+    IF $J = "" AND J = 2 THEN V = V - 1
+    IF $J = "" THEN W = 0
+    IF $J = "" THEN RETURN
     FOR W = 11 TO 16
       INK C
       MOVE 22 W
@@ -578,8 +590,10 @@ MENUBOX:
     IF W = 15 THEN $J = $9
   RETURN
   MENUEND:
+    W = V
     GOSUB MENUITEM
     IF $J = "" THEN GOTO MENULOOP
+    $I = $J
     V = V - 10
   GOSUB CLOSEBOX
 RETURN
@@ -599,6 +613,7 @@ LOADBOX:
   W = X * 256
   W = W + Y
   V = 11
+  SOUND 4000 1
   GOSUB DRAWFL
   LOADLOOP:
     WAITKEY Y
@@ -610,6 +625,7 @@ LOADBOX:
     IF Y = 13 THEN GOSUB GETFN
     IF Y = 13 THEN GOTO DOLOAD
     IF Y = 27 THEN RETURN
+  SOUND 4000 1
   GOTO LOADLOOP
   FLCHSEL:
     FOR Y = 11 TO 16
