@@ -1,21 +1,27 @@
 REM >>>MIKEBASIC-PLUS-PLUS-LIBRARY<<<
-REM Developed by Joshua Beck.
+REM Created by Joshua Beck.
+REM Version 3.0 beta 4
 REM Released under the GNU General Public Licence revision 3.
-REM Requires MikeOS version 4.3 beta 5 or greater.
+REM Requires MikeOS version 4.3 beta 7 or greater.
 REM Send bug reports or feedback to mikeosdeveloper@gmail.com
 
-MOVE 0 0
 PRINT "This is a library and not for direct use!"
 END
 
 ancitext:
+  GOSUB SAVEVAR
   ink c
-  poke x 65431
+  W = X
+  POKE Y 65430
+  CURSPOS X Y
+  POKE X 65431
 ancitex2:
   if x > w then y = y + 1
   if x > w then peek x 65431
   if x > 78 then y = y + 1
   if x > 78 then peek x 65431
+  PEEK J 65430
+  IF Y > J THEN RETURN
   if y > 23 then return
   move x y
   peek j v
@@ -33,7 +39,7 @@ ancitex2:
 goto ancitex2
   
 aniclose:
-  if $y = "DISABLE" then return
+  if $Y = "DISABLE" then return
   j = 176
   gosub blockbox
   pause 1
@@ -49,7 +55,8 @@ aniclose:
   return
 
 aniend:
-  if $y = "DISABLE" then return
+  IF $Z = "NOINT" THEN RETURN
+  if $Y = "DISABLE" then return
   j = 176
   gosub blockscr
   pause 1
@@ -77,7 +84,7 @@ aniend:
 return
 
 aniopen:
-  if $y = "DISABLE" then return
+  if $Y = "DISABLE" then return
   j = 219
   gosub blockbox
   pause 1
@@ -93,7 +100,7 @@ aniopen:
   return
 
 anistart:
-  if $y = "DISABLE" then return
+  if $Y = "DISABLE" then return
   j = 176
   gosub blockscr
   pause 1
@@ -139,36 +146,25 @@ anistart:
   return
 
 ARRAYGET:
-  W = & $V
-  PEEK J W
-  J = J - 65
-  J = J * 100
+  IF X > 99 THEN $E = "ARRAYGET: Array over maximum"
+  IF X > 99 THEN GOTO ERRBOX
+  IF X < 0 THEN $E = "ARRAYGET: Number below zero"
+  IF X < 0 THEN GOTO ERRBOX
+  J = X
+  J = J * 2
   J = J + 65000
-  if $V = "a" then w = a
-  if $V = "b" then w = b
-  if $V = "c" then w = c
-  if $V = "d" then w = d
-  if w > 99 then $e = "Array over maximum"
-  if w < 0 then $e = "Number below zero"
-  if w > 99 then goto errbox
-  if w < 0 then goto errbox
-  j = j + w
-  peek v j
+  PEEKINT V J
 RETURN
 
 ARRAYPUT:
-  W = & $V
-  j = j + 65000
-  IF $V = "a" then w = a
-  IF $V = "b" then w = b
-  IF $V = "c" then w = c
-  IF $V = "d" then w = d
-  IF w > 99 then $e = "Array over maximum"
-  IF w < 0 then $e = "Number below zero"
-  IF w > 99 then goto errbox
-  IF w < 0 then goto errbox
-  j = j + w
-  poke v j
+  IF X > 99 THEN $E = "ARRAYGET: Array over maximum"
+  IF X > 99 THEN GOTO ERRBOX
+  IF X < 0 THEN $E = "ARRAYGET: Number below zero"
+  IF X < 0 THEN GOTO ERRBOX
+  J = X
+  J = J * 2
+  J = J + 65000
+  POKEINT V J
 RETURN
 
 ASKBOX:
@@ -185,7 +181,7 @@ ASKBOX:
   print $9
   move 27 16
   print "--Yes--        --No--"
-  poke 1 65423
+  poke 1 65420
   V = 1
   gosub askdraw
   askloop:
@@ -195,24 +191,24 @@ ASKBOX:
     if j = 13 then goto askend
   goto askloop
 askend:
-  peek v 65423
+  peek v 65420
   j = v
   if j = 0 then v = 1
   if j = 1 then v = 0
   GOSUB CLOSEBOX
   return
 swleft:
-  peek v 65423
+  peek v 65420
   if v = 0 then return
   if v = 1 then v = 0
-  poke v 65423
+  poke v 65420
   gosub askdraw
   return
 swright:
-  peek v 65423
+  peek v 65420
   if v = 1 then return
   if v = 0 then v = 1
-  poke v 65423
+  poke v 65420
   gosub askdraw
   return
 askdraw:
@@ -275,33 +271,36 @@ BLOCKSCR:
 RETURN
 
 BORDER:
-  J = 0
+  INK Z
+  J = 1
   Y = 0
   FOR W = 1 TO 2
     FOR X = 0 TO 2
-      MOVE X Y
+      MOVE Y X
       READ BORDERDATA J V
-      PRINT CHR V
+      PRINT CHR V ;
       J = J + 1
     NEXT X
     Y = 79
   NEXT W
-  J = 186
   FOR Y = 3 TO 23
     MOVE 0 Y
-    PRINT CHR J
+    PRINT CHR 179 ;
     MOVE 79 Y
-    PRINT CHR J
+    PRINT CHR 179 ;
   NEXT Y
-  J = 205
   FOR X = 1 TO 78
     MOVE X 0
-    PRINT CHR J
+    PRINT CHR 196 ;
     MOVE X 2
-    PRINT CHR J
-    MOVE X 79
-    PRINT CHR J
+    PRINT CHR 196 ;
+    MOVE X 24
+    PRINT CHR 196 ;
   NEXT X
+  MOVE 0 24
+  PRINT CHR 192 ;
+  MOVE 79 24
+  PRINT CHR 217 ;
 RETURN
 
 BORDERDATA:
@@ -378,15 +377,14 @@ BOXREST:
 return
 
 CLOSEBOX:
+  POKE V 65418
   CURSOR OFF
   GOSUB ANICLOSE
   INK 7
   H = H / 16
   GOSUB BOXREST
-  PEEK J 65419
-  PEEK W 65420
-  PEEK X 65421
-  PEEK Y 65422
+  GOSUB LOADVAR
+  PEEK V 65418
 RETURN
 
 DINBOX:
@@ -417,6 +415,9 @@ ENDPROG:
   gosub aniend
   cls
   cursor on
+  FOR X = 64000 TO 65535
+    POKE 0 X
+  NEXT X
 end
 
 ERRBOX:
@@ -457,8 +458,8 @@ INPBOX:
 return
 
 LOADBOX:
-  POKE V 65534
-  GOSUB BOXOPEN
+  POKEINT V 65434
+  GOSUB OPENBOX
   X = 65408
   FOR Y = 1 TO 10
     READ GETLIST Y J
@@ -535,7 +536,7 @@ PREVFILE:
   IF X = ',' THEN RETURN
 GOTO PREVFIL2
 DOLOAD:
-  PEEK V 65534
+  PEEKINT V 65434
   LOAD $I V
   IF R = 1 THEN $E = "Cannot load file. Did disk change?"
   IF R = 1 THEN GOTO ERRBOX
@@ -543,6 +544,27 @@ RETURN
 
 GETLIST:
 96 232 62 0 191 152 255 171 97 195
+
+LOADVAR:
+  POKEINT J 65426
+  PEEK J 65421
+  IF J = 0 THEN $E = "Can't load variables, none stored!"
+  IF J = 0 THEN GOTO ERRBOX
+  J = J + 65200
+  PEEKINT Y J
+  J = J - 2
+  PEEKINT X J
+  J = J - 2
+  PEEKINT V J
+  J = J - 2
+  PEEKINT W J
+  J = J - 4
+  J = J - 65200
+  POKE J 65421
+  J = J + 65200
+  J = J + 2
+  PEEKINT J J
+RETURN
 
 MENUBOX:
   GOSUB OPENBOX
@@ -633,11 +655,11 @@ NUMBOX:
 return
 
 OPENBOX:
-  POKE V 65418
-  POKE J 65419
-  POKE W 65420
-  POKE X 65421
-  POKE Y 65422
+  GOSUB VERSTR
+  IF V > 36 THEN GOTO ERRBOX
+  IF V < 37 THEN PEEKINT V
+  GOSUB SAVEVAR
+  POKEINT V 65418
   GOSUB BOXSAVE
   IF C < 0 THEN C = 7
   IF C > 15 THEN C = 7
@@ -651,7 +673,7 @@ OPENBOX:
   GOSUB BOX
   MOVE 22 9
   PRINT $T
-  PEEK V 65418
+  PEEKINT V 65418
 RETURN
 
 pictotxt:
@@ -675,6 +697,7 @@ REFRESH:
   cls
   gosub border
   gosub title
+  gosub content
 return
 
 SAVEBOX:
@@ -697,15 +720,55 @@ SAVEBOX:
   CONT2:
   REM $5 = "File loaded successfully"
   REM GOTO NOTEBOX
-RETURN 
+RETURN
+
+SAVEVAR:
+  POKEINT Y 65426
+  PEEK Y 65421
+  IF Y > 198 THEN $E = "Variable storage area full!"
+  IF Y > 198 THEN GOTO ERRBOX
+  Y = Y + 65200
+  POKEINT J Y
+  Y = Y + 2
+  POKEINT W Y
+  Y = Y + 2
+  POKEINT V Y
+  Y = Y + 2
+  POKEINT X Y
+  Y = Y + 2
+  Y = Y - 65200
+  POKE Y 65421
+  PEEKINT Y 65426
+  POKEINT X 65426
+  PEEK X 65421
+  X = X + 65200
+  POKEINT Y X
+  X = X + 2
+  X = X - 65200
+  POKE X 65421
+  PEEKINT X 65426
+RETURN
 
 SETTITLE:
-  POKE Z 65439 
+  LEN $T J
+  IF J = 0 THEN RETURN
+  IF J > 78 THEN RETURN
+  POKE Z 65439
+  MOVE 1 1
+  PRINT " " ;
+  PRINT $T ;
+  FOR X = J TO 78
+    PRINT " " ;
+  NEXT X
   Y = & $T
-  FOR X = 65440 TO 65514
+  J = J + 65439
+  FOR X = 65440 TO J
     PEEK W X
     POKE W Y
     Y = Y + 1
+  NEXT X
+  FOR X = X TO J
+    POKE 0 X
   NEXT X
 RETURN
 
@@ -715,24 +778,52 @@ TITLE:
   MOVE 2 1
   FOR X = 65440 TO 65514
     PEEK J X
+    IF J = 0 THEN J = 32
     PRINT CHR J ;
   NEXT X
 RETURN
 
-XPUT:
-  $E = "XPUT: invalid location!"
-  IF V < 0 then goto errbox
-  IF V > 8096 then goto errbox
-  J = 32767 - V
-  poke v j
+VERSTR:
+  POKEINT V 65418
+  $E = "String too long"
+  LEN $5 V
+  IF V > 36 THEN RETURN
+  LEN $6 V
+  IF V > 36 THEN RETURN
+  LEN $7 V
+  IF V > 36 THEN RETURN
+  LEN $8 V
+  IF V > 36 THEN RETURN
+  LEN $9 V
+  IF V > 36 THEN RETURN
 RETURN
 
+XMEM:
+  GOSUB SAVEVAR
+  POKEINT V 65436
+  Y = 65168
+  FOR X = 1 TO 32
+    READ XMEMASM X W
+    POKE W Y
+    Y = Y + 1
+  NEXT X
+  GOSUB LOADVAR
+RETURN  
+
+XMEMASM:
+6 161 156 255 142 192 160 142 255 139 62 144 255 170 7 195
+30 139 54 144 255 161 156 255 142 216 172 31 162 142 255 195
+    
 XGET:
-  $E = "XGET: invalid location!"
-  if v < 0 then goto errbox
-  if v > 8096 then goto errbox
-  j = 32767 - e
-  peek v j
+  POKEINT X 65424
+  CALL 65184
+  PEEK V 65422
+RETURN
+
+XPUT:
+  POKEINT X 65424
+  POKE V 65422
+  CALL 65168
 RETURN
 
 REM
