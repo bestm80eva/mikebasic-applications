@@ -271,6 +271,8 @@ BLOCKSCR:
 RETURN
 
 BORDER:
+  GOSUB SAVELOC
+  POKE Z 65439
   INK Z
   J = 1
   Y = 0
@@ -301,6 +303,7 @@ BORDER:
   PRINT CHR 192 ;
   MOVE 79 24
   PRINT CHR 217 ;
+  GOSUB LOADLOC
 RETURN
 
 BORDERDATA:
@@ -561,9 +564,10 @@ RETURN
 LOADVAR:
   POKEINT J 65426
   PEEK J 65421
-  IF J = 0 THEN $E = "Can't load variables, none stored!"
-  IF J = 0 THEN GOTO ERRBOX
-  J = J + 65200
+  IF J = 0 THEN PRINT "Fatal: Can't load variables, none stored!"
+  IF J = 0 THEN WAITKEY K
+  IF J = 0 THEN GOSUB ENDPROG
+  J = J + 65198
   PEEKINT Y J
   J = J - 2
   PEEKINT X J
@@ -762,8 +766,9 @@ RETURN
 SAVEVAR:
   POKEINT Y 65426
   PEEK Y 65421
-  IF Y > 198 THEN $E = "Variable storage area full!"
-  IF Y > 198 THEN GOTO ERRBOX
+  IF Y > 198 THEN PRINT "Fatal: Variable storage area full!"
+  IF Y > 198 THEN WAITKEY K
+  IF Y > 198 THEN GOSUB ENDPROG
   Y = Y + 65200
   POKEINT J Y
   Y = Y + 2
@@ -791,21 +796,22 @@ SETTITLE:
   LEN $T J
   IF J = 0 THEN RETURN
   IF J > 78 THEN RETURN
-  POKE Z 65439
+  PEEK Z 65439
+  INK Z
   MOVE 1 1
   PRINT " " ;
   PRINT $T ;
-  FOR X = J TO 78
+  FOR X = J TO 76
     PRINT " " ;
   NEXT X
   Y = & $T
-  J = J + 65439
+  J = J + 65441
   FOR X = 65440 TO J
-    PEEK W X
-    POKE W Y
+    PEEK W Y
+    POKE W X
     Y = Y + 1
   NEXT X
-  FOR X = X TO J
+  FOR X = X TO 65514
     POKE 0 X
   NEXT X
   GOSUB LOADLOC
@@ -815,11 +821,18 @@ TITLE:
   GOSUB SAVELOC
   PEEK J 65439
   INK J
-  MOVE 2 1
-  FOR X = 65440 TO 65514
+  MOVE 1 1
+  PRINT " " ;
+  X = 65440
+  DO
     PEEK J X
-    IF J = 0 THEN J = 32
+    IF J < 32 AND J > 0 THEN J = 32
     PRINT CHR J ;
+    X = X + 1
+  LOOP UNTIL J = 0
+  CURSPOS X Y
+  FOR X = X TO 78
+    PRINT " " ;
   NEXT X
   GOSUB LOADLOC
 RETURN
