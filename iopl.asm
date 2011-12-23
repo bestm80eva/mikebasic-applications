@@ -2,7 +2,7 @@
 ;IOPL language interpreter for MikeOS
 ;Created by Joshua Beck
 ;Licenced under the GNU General Public Licence
-;Version 0.1
+;Version 0.2
 
 
 ;#########API-Linker###############################
@@ -42,21 +42,29 @@ command_loader:
 
 	mov si, cmd_type		; Check what type it is and jump to a section
 	
-	mov di, in_command
+	mov di, if_prefix
 	call os_string_compare
-	jc near in_commands
+	jc if_commands
 
-	mov di, out_command
+	mov di, in_prefix
 	call os_string_compare
-	jc near out_commands
+	jc in_commands
+
+	mov di, info_prefix
+	call os_string_compare
+	jc info_line
+
+	mov di, out_prefix
+	call os_string_compare
+	jc out_commands
 	
-	mov di, set_command
+	mov di, set_prefix
 	call os_string_compare
-	jc near set_commands
+	jc set_commands
 	
-	mov di, prog_command
+	mov di, prog_prefix
 	call os_string_compare
-	jc near prog_commands
+	jc prog_commands
 	
 	jmp invalid_command_starter
 	
@@ -65,8 +73,17 @@ in_commands:
 	
 	mov di, text_cmd
 	call os_string_compare
-	jc in_text
+	jc cmd_in_text
 		
+	jmp invalid_command_ender
+
+if_commands:
+	mov si, cmd
+	
+	mov di, text_cmd
+	call os_string_compare
+	jc cmd_if_text
+	
 	jmp invalid_command_ender
 
 out_commands:
@@ -74,7 +91,7 @@ out_commands:
         
         mov di, text_cmd
         call os_string_compare
-        jc out_text
+        jc cmd_out_text
         
 	jmp invalid_command_ender
 	
@@ -83,7 +100,8 @@ set_commands:
 	
 	mov di, text_cmd
 	call os_string_compare
-	jc set_text
+	jc cmd_set_text
+	
 	jmp invalid_command_ender
 	
 prog_commands:
@@ -94,13 +112,27 @@ prog_commands:
 	jc program_end
 	jmp invalid_command_ender
 	
+info_line:
+	mov word si, [loc]
+
+.find_end:
+	cmp byte [si], 10
+	je .end_line
+	inc si
+	jmp .find_end
+	
+.end_line:
+	inc si
+	mov word [loc], si
+	jmp command_loader
+	
 ;#########Command-Action-Area######################
 
-;=============
-;IN-TEXT
-;=============
+;===========
+;==IN-TEXT==
+;===========
 
-in_text:
+cmd_in_text:
 	call get_parameter
 
 	cmp al, [text_var]
@@ -228,43 +260,79 @@ in_text:
 	
 	jmp command_loader
 	
-;============
-;==OUT_TEXT==
-;============
-out_text:
-        call get_parameter
-        cmp al, [text_var]
-        jne invalid_parameter
-        
-        mov bp, bx
-
-        mov ax, bx
-	call os_string_length
-        mov cx, ax
-        
-        call os_get_cursor_pos
-        
-        mov ah, 13h
-        mov al, 1
-        mov bh, [out_page]
-        mov bl, [text_colour]
-        int 10h
-        
-       	jmp command_loader
-        
-;============
-;==SET_TEXT==
-;============
-set_text:
+;===========
+;==IF-TEXT==
+;===========
+cmd_if_text:
 	call get_parameter
-	cmp al, [text_var]
-;	jne invalid_parameter
 	
 	mov cx, bx
 	
 	call get_parameter
-	cmp al, [data_block]
-;	jne invalid_parameter
+	
+	mov si, bx
+	mov di, cx
+	
+	call os_string_compare
+	jc command_loader
+	
+	mov word si, [loc]
+	
+.diff:
+	cmp byte [si], 10
+	inc si
+	je command_loader
+	jmp .diff
+
+;============
+;==OUT-TEXT==
+;============
+cmd_out_text:
+	call get_parameter
+        
+	mov si, bx
+	
+	call os_get_cursor_pos
+        
+	mov ah, 9			; VideoBIOS parameters
+	mov bh, [out_page]
+	mov bl, [text_colour]
+	mov cx, 1
+
+.text_loop:
+	lodsb
+	
+	cmp al, 10
+	je .newline
+	
+	cmp al, 0
+	je command_loader
+	
+	int 10h				; we have all the data we need
+	
+	cmp dl, 79			; is the cursor at the end of the line?
+	je .newline
+	
+	inc dl				; move cursor forward
+	call os_move_cursor
+	
+	jmp .text_loop
+        
+.newline:
+	inc dh
+	mov dl, 0
+	call os_move_cursor
+	jmp .text_loop
+	
+;============
+;==SET-TEXT==
+;============
+cmd_set_text:
+	call get_parameter
+	
+	mov cx, bx
+	
+	call get_parameter
 	
 	mov si, bx
 	mov di, cx
@@ -274,7 +342,7 @@ set_text:
 	jmp command_loader
 
 ;============
-;==PROG_END==
+;==PROG-END==
 ;============
 program_end:
 	call os_print_newline
@@ -322,7 +390,7 @@ get_command:
 	call os_string_uppercase
 	
 	mov word di, cmd
-	mov bx, 10
+	mov bx, 14
 	add bx, cmd_type
 	mov word si, [loc]
 	
@@ -375,6 +443,12 @@ get_parameter:
 	cmp al, '%'
 	je get_word_var
 	
+	cmp al, '$'
+	je get_num_constant
+	
+	cmp al, '&'
+	je get_hex_constant
+	
 	jmp .none
 
 .none:
@@ -383,7 +457,6 @@ get_parameter:
 	ret
 
 get_data_block:
-	inc si
 	mov word di, current_text	; text buffer
 	mov bx, 63			; maximum length
 	add bx, di
@@ -409,8 +482,6 @@ get_data_block:
 	ret
 
 get_text_var:
-	inc word [loc]
-
 	lodsb
 	mov bl, al
 	
@@ -427,6 +498,9 @@ get_text_var:
 	cmp bl, 74
 	jg invalid_var
 	
+	inc si
+	mov word [loc], si
+
 	mov si, text_variables		; Calculate the start of the variable
 	mov ax, 64
 	mul bl
@@ -435,7 +509,6 @@ get_text_var:
 	
 	mov byte al, [text_var]		; Set variable type
 	
-	inc word [loc]
 	ret
 
 	.is_lowercase:
@@ -514,14 +587,58 @@ get_word_var:
 	sub al, 32
 	jmp .find_var
 .data:
-	.tmp		db 0
+	.tmp			db 0
+	
+get_num_constant:
+	mov di, .tmp_string
+
+.get_number_string:
+	lodsb
+	
+	cmp al, 32
+	je .end_of_number
+	
+	cmp al, 10
+	je .end_of_number
+	
+	cmp al, 48
+	jl .nan
+	
+	cmp al, 57
+	jg .nan
+	
+	stosb
+	je .get_number_string
+
+.end_of_number:	
+	mov al, 0
+	stosb
+	
+	inc si
+	mov word [loc], si
+
+	mov word si, .tmp_string
+	call os_string_to_int
+	
+	mov bx, ax
+	mov ax, [fixed_number]
+	
+	ret
+	
+.nan:
+	mov si, msg_invalid_number
+	jmp error_msg
+.data:
+	.tmp_string		times 6 db 0
+	
+get_hex_constant:
+	ret
 	
 end_prog:
 	call os_print_newline
         mov si, press_key_message	; Print "Press any key to continue..." and wait for a key before ending
         call os_print_string
         call os_wait_for_key
-        call os_print_newline
 	mov word sp, [os_stack]
 	ret
 	
@@ -531,11 +648,11 @@ found_null:
 	jmp error_msg
 	
 invalid_parameter:
-        mov si, invalid_parameter_message
+        mov si, msg_invalid_parameter
         jmp error_msg
 
 invalid_var:
-	mov si, invalid_variable_message
+	mov si, msg_invalid_variable
 	jmp error_msg
 	
 invalid_command_starter:
@@ -556,7 +673,7 @@ error_msg:
 	call os_print_newline
         call os_print_string
         call os_print_newline
-        mov si, program_error_message
+        mov si, msg_program_error
         call os_print_string
 	jmp end_prog
         
@@ -575,12 +692,12 @@ data:
         current_text    times 200 db 0
 
 .command_types:
-	if_command	db "IF", 0
-	in_command	db "IN", 0
-	info_command	db "INFO", 0
-	out_command	db "OUT", 0
-	prog_command	db "PROG", 0
-	set_command	db "SET", 0
+	if_prefix	db "IF", 0
+	in_prefix	db "IN", 0
+	info_prefix	db "INFO", 0
+	out_prefix	db "OUT", 0
+	prog_prefix	db "PROG", 0
+	set_prefix	db "SET", 0
 
 .commands:
 	text_cmd	db "TEXT", 0
@@ -594,6 +711,8 @@ data:
 	byte_var	db 2
 	word_var	db 3
 	data_block	db 4
+	fixed_number	db 5
+	hex_number	db 6
 
 .settings:
         out_page	db 0
@@ -603,9 +722,11 @@ data:
 .errors:
 	msg_invalid_command_starter	db "Invalid start of command: ", 0
 	msg_invalid_command_ender	db "Invalid end of command: ", 0
-        invalid_parameter_message 	db "Invalid parameter type", 0
-        invalid_variable_message	db "Invalid variable letter", 0
-        program_error_message		db "Program stopped.", 0
+	msg_invalid_number		db "Non-numerical character in numerical constant!"
+	
+        msg_invalid_parameter 		db "Invalid parameter type", 0
+        msg_invalid_variable		db "Invalid variable letter", 0
+        msg_program_error		db "Program stopped.", 0
         msg_found_null			db "Unexpected end of program.", 0
         
 .messages:
