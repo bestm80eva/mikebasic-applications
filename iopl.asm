@@ -2,8 +2,9 @@
 ;IOPL language interpreter for MikeOS
 ;Created by Joshua Beck
 ;Licenced under the GNU General Public Licence
-;Version 0.2
+;Version 0.3
 
+; The tabs may look wierd unless you use a monospaced font.
 
 ;#########API-Linker###############################
 os_run_iopl:
@@ -74,7 +75,11 @@ in_commands:
 	mov di, text_cmd
 	call os_string_compare
 	jc cmd_in_text
-		
+
+	cmp di, char_cmd
+	call os_string_compare
+	jc cmd_in_char
+	
 	jmp invalid_command_ender
 
 if_commands:
@@ -84,6 +89,10 @@ if_commands:
 	call os_string_compare
 	jc cmd_if_text
 	
+	mov di, char_cmd
+	call os_string_compare
+	jc cmd_if_char
+	
 	jmp invalid_command_ender
 
 out_commands:
@@ -92,6 +101,10 @@ out_commands:
         mov di, text_cmd
         call os_string_compare
         jc cmd_out_text
+
+	mov di, char_cmd
+	call os_string_compare
+	jc cmd_out_char
         
 	jmp invalid_command_ender
 	
@@ -102,6 +115,10 @@ set_commands:
 	call os_string_compare
 	jc cmd_set_text
 	
+	mov di, char_cmd
+	call os_string_compare
+	jc cmd_set_char
+
 	jmp invalid_command_ender
 	
 prog_commands:
@@ -129,6 +146,33 @@ info_line:
 ;#########Command-Action-Area######################
 
 ;===========
+;==IN-CHAR==
+;===========
+cmd_in_char:
+	mov ah, 8
+	mov bx, [out_page]
+	int 10h
+	
+	mov cl, ah
+	
+	mov bh, 0
+	mov bl, al
+	call set_parameter
+	
+	mov bh, 0
+	mov bl, cl
+	call set_parameter
+	
+	jmp command_loader
+	
+	
+;=============
+;==IN-NUMBER==
+;=============
+	;mov ax, 
+	
+	
+;===========
 ;==IN-TEXT==
 ;===========
 
@@ -150,7 +194,7 @@ cmd_in_text:
 .input:
 	call os_wait_for_key
 	
-	cmp ax, 4B00h
+	cmp ax, 4BE0h
 	je .move_left
 	
 	cmp al, 8		; Is it backspace?
@@ -162,7 +206,7 @@ cmd_in_text:
 	cmp si, 63		; Make sure we are not past the maximum length
 	je .input
 	
-	cmp ax, 4D00h
+	cmp ax, 4DE0h
 	je .move_right
 	
 				; Not a special key
@@ -260,6 +304,27 @@ cmd_in_text:
 	
 	jmp command_loader
 	
+
+;===========
+;==IF-CHAR==
+;===========
+cmd_if_char:
+	mov ah, 8
+	mov bh, [out_page]
+	int 10h
+	
+	mov cx, ax
+	call get_parameter
+	cmp cx, bx
+	
+	je command_loader
+	
+	mov si, [loc]
+	
+	call jump_eol
+	jmp command_loader
+
+	
 ;===========
 ;==IF-TEXT==
 ;===========
@@ -276,14 +341,29 @@ cmd_if_text:
 	call os_string_compare
 	jc command_loader
 	
-	mov word si, [loc]
-	
-.diff:
-	cmp byte [si], 10
-	inc si
-	je command_loader
-	jmp .diff
+	call jump_eol
+	jmp command_loader
 
+
+;============
+;==OUT-CHAR==
+;============
+cmd_out_char:
+	call cursor_symbol
+
+	call get_parameter
+	mov al, bl
+	
+	mov ah, 9
+	mov byte bh, [out_page]
+	mov byte bl, [text_colour]
+	mov cx, 1
+	
+	int 0x10
+	
+	jmp command_loader
+	
+	
 ;============
 ;==OUT-TEXT==
 ;============
@@ -323,6 +403,74 @@ cmd_out_text:
 	mov dl, 0
 	call os_move_cursor
 	jmp .text_loop
+	
+;============
+;==SET-CHAR==
+;============
+cmd_set_char:
+	call get_direction_flag		; get an arrow parameter, returns 0 for forwards (>) and 1 for backwards (<)
+
+	cmp al, 1			; if it was backwards set a new cursor position otherwise, retrieve it.
+	je .set_pos
+
+.get_pos:
+	call os_get_cursor_pos		; MikeOS API to retrieve cursor position to DH,DL
+	
+	mov bh, 0			; set first parameter to the row
+	mov bl, dh
+	call set_parameter
+	
+	mov bh, 0			; set the second to the column
+	mov bl, dl
+	call set_parameter
+	
+	mov bh, 0
+	mov byte bl, [text_colour]
+	call set_parameter
+	
+	jmp command_loader		; load the next command
+	
+.set_pos:
+	call get_parameter		; the first parameter will be the row
+	mov dh, bl
+	
+	call get_parameter		; the second will be the column
+	mov dl, bl
+	
+	cmp dh, 24			; verify it's not off the screen
+	jg .invalid
+	cmp dl, 79
+	jg .invalid
+
+	call os_move_cursor		; save time by using MikeOS API for cursor movement
+	
+	call get_parameter
+	mov bh, 0
+	mov byte [text_colour], bl
+	
+	jmp command_loader		; load next command
+
+.invalid:
+	mov si, msg_bad_cursor_position	; outputs like: "Woops! You can't move the cursor to row 40 column 60"
+	call os_print_string
+	mov si, row_word
+	call os_print_string
+	mov ah, 0
+	mov al, dh
+	call os_int_to_string
+	mov si, ax
+	call os_print_string
+	mov si, column_word
+	call os_print_string
+	mov ah, 0
+	mov al, dl
+	call os_int_to_string
+	mov si, ax
+	call os_print_string
+	jmp end_prog
+.data:	
+	row_word			db "row ", 0
+	column_word			db " column ", 0
 	
 ;============
 ;==SET-TEXT==
@@ -369,7 +517,7 @@ get_command:
 	
 	cmp al, '-'
 	je .end_type
-		
+	
 	cmp al, 0
 	je found_null
 
@@ -431,7 +579,7 @@ get_parameter:
 	cmp al, 0
 	je found_null
 	
-	cmp al, ';'
+	cmp al, ':'
 	je get_data_block
 	
 	cmp al, '#'
@@ -452,16 +600,27 @@ get_parameter:
 	jmp .none
 
 .none:
-	mov byte al, [unknown]
 	mov bx, 0
+.loop:
+	lodsb
+	
+	cmp al, 32
+	je .done
+	
+	cmp al, 10
+	je .done
+	
+	jmp .loop
+.done:
+	mov byte al, [unknown]
 	ret
 
 get_data_block:
-	mov word di, current_text	; text buffer
-	mov bx, 63			; maximum length
+	mov word di, current_text		; text buffer
+	mov bx, 63				; maximum length
 	add bx, di
 	
-	.copy:				; semi-colin's start and end text blocks
+	.copy:					; semi-colin's end text blocks
 	lodsb
 	cmp al, ';'
 	je .end_text
@@ -548,7 +707,7 @@ get_byte_var:
 	inc word [loc]			; Move past next letter (for next parameter)
 	ret
 	
-.is_lowercase:				;If it's lowercase convert to capital
+.is_lowercase:				; If it's lowercase convert to capital
 	sub al, 32
 	jmp .find_var
 	
@@ -608,13 +767,12 @@ get_num_constant:
 	jg .nan
 	
 	stosb
-	je .get_number_string
+	jmp .get_number_string
 
 .end_of_number:	
 	mov al, 0
 	stosb
 	
-	inc si
 	mov word [loc], si
 
 	mov word si, .tmp_string
@@ -632,7 +790,311 @@ get_num_constant:
 	.tmp_string		times 6 db 0
 	
 get_hex_constant:
+	mov bx, 0		; BX will collect the number
+
+.find_number:
+	lodsb			
+	
+	cmp al, 32
+	je .done
+	
+	cmp al, 10
+	je .done
+	
+	cmp al, '0'		; figure out value of character
+	jl .invalid
+	
+	cmp al, 'f'
+	jg .invalid
+	
+	cmp al, '9'
+	jle .is_number
+	
+	cmp al, 'a'
+	jge .is_lowercase
+	
+	cmp al, 'F'
+	jg .invalid
+	
+	cmp al, 'A'
+	jl .invalid
+	
+	cmp al, 'A'
+	jge .is_capital
+	
+	jmp .invalid
+.got_digit:	
+	shl bx, 4		; move the last hex character up
+	add bl, al		; add the new one
+	jmp .find_number	; find the rest
+.done:
+	mov ax, [hex_number]
+	mov word [loc], si
 	ret
+	
+.is_number:			; these translate ASCII to the hexdecimal value
+	sub al, 48
+	jmp .got_digit
+	
+.is_capital:
+	sub al, 55
+	jmp .got_digit
+	
+.is_lowercase:
+	sub al, 87
+	jmp .got_digit
+	
+.invalid:			; for exception characters
+	mov si, msg_invalid_hex
+	jmp error_msg
+	
+	
+set_parameter:
+	mov word si, [loc]
+	lodsb
+
+	cmp al, 0
+	je found_null
+	
+	cmp al, ':'
+	je .bad_output
+	
+	cmp al, '#'
+	je set_text_var
+	
+	cmp al, '!'
+	je set_byte_var
+	
+	cmp al, '%'
+	je set_word_var
+	
+	cmp al, '$'
+	je .bad_output
+	
+	cmp al, '&'
+	je .bad_output
+	
+	jmp get_parameter.none
+	
+.bad_output:
+	mov si, msg_output_constant
+	jmp error_msg
+
+set_text_var:
+	lodsb
+	
+	cmp al, 65
+	jl invalid_var
+	
+	cmp al, 106
+	jg invalid_var
+	
+	cmp al, 96
+	jg .is_lowercase
+
+	.find_var:
+	cmp al, 74
+	jg invalid_var
+	
+	inc si
+	mov word [loc], si
+	
+	mov word [.tmp], bx
+	
+	mov di, text_variables		; Calculate the start of the variable
+	mov bx, 64
+	mul bl
+	add di, ax
+	
+	mov word si, [.tmp]
+	call os_string_copy
+	
+	ret
+
+	.is_lowercase:
+	sub bl, 32
+	jmp .find_var
+	
+	.tmp				dw 0
+	
+set_byte_var:
+	inc word [loc]			; Move to the next character, get character
+	lodsb
+	mov ah, 0
+	
+	cmp al, 65			; Make sure it's a valid letter
+	jl invalid_var
+	
+	cmp al, 122
+	jg invalid_var
+	
+	cmp al, 96			; Make sure it's capital
+	jg .is_lowercase
+	
+	.find_var:
+	cmp al, 90
+	jg invalid_var
+	
+
+	mov di, byte_variables	; Find location to save to
+	sub al, 65
+	add di, ax
+	mov al, bl			; Save the lower byte
+	stosb
+	
+	inc word [loc]			; Move past next letter (for next parameter)
+	ret
+	
+.is_lowercase:				;If it's lowercase convert to capital
+	sub al, 32
+	jmp .find_var
+	
+set_word_var:
+	inc word [loc]
+	lodsb
+	
+	cmp al, 65
+	jl invalid_var
+	
+	cmp al, 122
+	jg invalid_var
+	
+	cmp al, 96
+	jg .is_lowercase
+	
+	.find_var:
+	cmp al, 90
+	jg invalid_var
+	
+	mov byte [.tmp], al
+	
+	mov di, word_variables
+	sub al, 65
+	add di, ax
+	mov ax, bx
+	stosw
+	
+	inc word [loc]
+	ret
+
+.is_lowercase:
+	sub al, 32
+	jmp .find_var
+.data:
+	.tmp			db 0
+	
+	
+jump_eol:
+	mov word si, [loc]
+.find_eol:
+	cmp byte [si], 10
+	je .found_eol
+	
+	cmp byte [si], ':'
+	je .find_eob
+	
+	inc si
+	jmp .find_eol
+	
+.find_eob:
+	inc si
+	
+	cmp byte [si], ';'
+	jne .find_eob
+	
+	inc si
+	jmp .find_eol
+	
+.found_eol:
+	inc si
+	inc si
+	mov word [loc], si
+	ret
+
+cursor_symbol:
+	; Use this to intepret	a character '-','+' or '=' to determine cursor movement
+	push ax
+	push dx
+	push si
+	
+	mov word si, [loc]
+	lodsb
+	cmp al, '+'
+	je .move_forward
+	
+	cmp al, '-'
+	je .move_backward
+	
+	cmp al, '='
+	jne .bad_symbol
+
+	jmp .end
+	
+.bad_symbol:
+	mov si, msg_bad_symbol
+	jmp error_msg
+	
+.move_forward:
+	call os_get_cursor_pos
+	inc dl
+	cmp dl, 80
+	je .move_newline
+	call os_move_cursor
+	jmp .end
+	
+.move_newline:
+	inc dh
+	mov dl, 0
+	call os_move_cursor
+	jmp .end
+	
+.move_backward:
+	call os_get_cursor_pos
+	cmp dl, 0
+	je .move_oldline
+	dec dl
+	call os_move_cursor
+	jmp .end
+	
+.move_oldline:
+	dec dh
+	mov dl, 0
+	call os_move_cursor
+	
+.end:
+	lodsb
+	mov word [loc], si
+	pop si
+	pop dx
+	pop ax
+	ret
+	
+get_direction_flag:
+	mov word si, [loc]
+	lodsb
+	
+	cmp al, '>'
+	je .forward
+	
+	cmp al, '<'
+	je .backward
+	
+	mov si, msg_expected_direction
+	jmp error_msg
+	
+.forward:
+	lodsb
+	mov al, 0
+	mov word [loc], si
+	ret
+
+	
+.backward:
+	lodsb
+	mov al, 1
+	mov word [loc], si
+	ret
+	
 	
 end_prog:
 	call os_print_newline
@@ -665,6 +1127,10 @@ invalid_command_starter:
 invalid_command_ender:
 	mov si, msg_invalid_command_ender
 	call os_print_string
+	mov si, cmd_type
+	call os_print_string
+	mov si, msg_invalid_command_ender2
+	call os_print_string
 	mov si, cmd
 	call os_print_string
 	jmp end_prog
@@ -680,55 +1146,64 @@ error_msg:
 ;#########Data-Area################################
 
 data:
-	os_stack	dw 0
-	start		dw 0
-	loc 		dw 0
-	end		dw 0
-	byte_variables	times 26 db 0		; 26 one-byte variables
-	word_variables	times 26 dw 0		; 26 two-byte variables (52 bytes)
-	text_variables	times 640 db 0		; 10 strings * 64 characters each
-	cmd_type	times 6 db 0		; command type (IN,OUT,SET,PROG,IF,IFN,INFO)
-	cmd		times 10 db 0		; commands (TEXT, PIXAL, FILE, CHAR, END etc)
-        current_text    times 200 db 0
+	os_stack			dw 0				; save the stack in case there's a error in a subroutine
+	start				dw 0				
+	loc 				dw 0				; current program location, place to retrieve data from
+	end				dw 0
+	program_line			dw 0				; line number, used for error messages
+	byte_variables			times 26 	db 0		; 26 one-byte variables
+	word_variables			times 26 	dw 0		; 26 two-byte variables (52 bytes)
+	text_variables			times 640 	db 0		; 10 strings * 64 characters each
+	cmd_type			times 6 	db 0		; command type (IN,OUT,SET,PROG,IF,IFN,INFO)
+	cmd				times 10 	db 0		; commands (TEXT, PIXAL, FILE, CHAR, END etc)
+        current_text    		times 200 	db 0
 
 .command_types:
-	if_prefix	db "IF", 0
-	in_prefix	db "IN", 0
-	info_prefix	db "INFO", 0
-	out_prefix	db "OUT", 0
-	prog_prefix	db "PROG", 0
-	set_prefix	db "SET", 0
+	if_prefix			db "IF", 0
+	in_prefix			db "IN", 0
+	info_prefix			db "INFO", 0
+	out_prefix			db "OUT", 0
+	prog_prefix			db "PROG", 0
+	set_prefix			db "SET", 0
 
 .commands:
-	text_cmd	db "TEXT", 0
-	pixal_cmd	db "PIXAL", 0
-	file_cmd	db "FILE", 0
-	end_cmd2	db "END", 0
+	char_cmd			db "CHAR", 0
+	number_cmd2			db "NUMBER", 0
+	text_cmd			db "TEXT", 0
+	pixal_cmd			db "PIXAL", 0
+	file_cmd			db "FILE", 0
+	end_cmd2			db "END", 0
 
 .variable_types:
-	unknown		db 0			; Type specifications, used to check variable type easily
-	text_var	db 1			; i.e. "cmp al, [byte_var]
-	byte_var	db 2
-	word_var	db 3
-	data_block	db 4
-	fixed_number	db 5
-	hex_number	db 6
+	unknown				db 0
+	text_var			db 1
+	byte_var			db 2
+	word_var			db 3
+	data_block			db 4
+	fixed_number			db 5
+	hex_number			db 6
 
 .settings:
-        out_page	db 0
-	set_page	db 0
-	text_colour	db 7
+        out_page			db 0				; video page to output to
+	set_page			db 0				; video page being viewed
+	text_colour			db 7				; start text colour at white
 	
-.errors:
-	msg_invalid_command_starter	db "Invalid start of command: ", 0
-	msg_invalid_command_ender	db "Invalid end of command: ", 0
-	msg_invalid_number		db "Non-numerical character in numerical constant!"
+.errors:				; Error messages, at one point in time these were serious/technical, that's boring.
+	msg_invalid_command_starter	db "You can't start a command with: ", 0
+	msg_invalid_command_ender	db "You can't match: ", 0
+	msg_invalid_command_ender2	db " with: ", 0
+	msg_invalid_number		db "Oops! There's a problem with that number.", 0
+	msg_invalid_hex			db "Oops! There's a problem with that hexdecimal.", 0
+	msg_output_constant		db "Oops! We wanted a variable and got a constant", 0
+	msg_bad_symbol			db "Oops! You needed a cursor symbol (+,-,=).", 0
+	msg_bad_cursor_position		db "Sorry, you can't move the cursor to ", 0
+	msg_expected_direction		db "Oops! You need a direction < or >.", 0
 	
-        msg_invalid_parameter 		db "Invalid parameter type", 0
-        msg_invalid_variable		db "Invalid variable letter", 0
-        msg_program_error		db "Program stopped.", 0
-        msg_found_null			db "Unexpected end of program.", 0
+        msg_invalid_parameter 		db "Oops! We need a parameter", 0
+        msg_invalid_variable		db "Woops! That character is out of range.", 0
+        msg_program_error		db "Program stopped.  :-(", 0
+        msg_found_null			db "Unexpected end of program.  :-O", 0
         
-.messages:
-	program_end_message		db "Program complete.", 0
+.messages:				; Messages that don't involve errors.
+	program_end_message		db "Program complete. :-)", 0
 	press_key_message		db "Press any key to continue...", 0

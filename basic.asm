@@ -1,6 +1,6 @@
 ; ==================================================================
 ; MikeOS -- The Mike Operating System kernel
-; Copyright (C) 2006 - 2011 MikeOS Developers -- see doc/LICENSE.TXT
+; Copyright (C) 2006 - 2012 MikeOS Developers -- see doc/LICENSE.TXT
 ;
 ; BASIC CODE INTERPRETER
 ; ==================================================================
@@ -115,10 +115,6 @@ mainloop:
 	call os_string_compare
 	jc near do_end
 
-	mov di, files_cmd
-	call os_string_compare
-	jc near do_files
-
 	mov di, for_cmd
 	call os_string_compare
 	jc near do_for
@@ -170,6 +166,10 @@ mainloop:
 	mov di, loop_cmd
 	call os_string_compare
 	jc near do_loop
+
+	mov di, mode_cmd
+	call os_string_compare
+	jc near do_mode
 
 	mov di, move_cmd
 	call os_string_compare
@@ -1008,88 +1008,6 @@ do_end:
 	mov word sp, [orig_stack]
 	ret
 
-; ------------------------------------------------------------------
-; FILES
-
-do_files:
-	call os_get_file_list
-	
-	mov word [.loc], ax
-	mov byte [.size], 21
-
-.print_filename:
-	mov word si, [.loc]
-	lodsb
-	
-	dec byte [.size]
-	
-	cmp al, ','				; List is comma seperated and zero terminated
-	je .end_filename
-	cmp al, 0
-	je .end_filelist
-	
-	mov ah, 09h				; Print the character, all the usual variables
-	mov bh, [work_page]
-	mov bl, [ink_colour]
-	mov cx, 1
-	int 10h
-	
-	mov ah, 03h				; Move cursor forward one position
-	int 10h
-	inc dl
-	mov ah, 02h
-	int 10h
-	
-	inc word [.loc]
-	
-	jmp .print_filename
-	
-.end_filename:
-	mov ah, 09h				; Fill the rest of the room up with spaces to ensure neat columns
-	mov al, ' '
-	mov bh, [work_page]
-	mov bl, [ink_colour]
-	mov cx, 1
-	int 10h
-	
-	mov ah, 03h
-	int 10h
-	cmp dl, 79
-	je .new_line
-	inc dl
-	.move_cur:
-	mov ah, 02h
-	int 10h
-
-	dec byte [.size]
-	cmp byte [.size], 0
-	jne .end_filename
-	
-	mov byte [.size], 21
-	inc word [.loc]
-	
-	jmp .print_filename
-	
-.new_line:
-	inc dh
-	mov dl, 0
-	jmp .move_cur
-	
-.end_filelist:
-	mov ah, 03h				; Move to the start of the next line
-	int 10h
-	inc dh
-	mov dl, 0
-	mov ah, 02h
-	int 10h
-	
-	jmp mainloop
-	
-.data:
-	.size					db 0
-	.loc					dw 0
-	
-
 
 ; ------------------------------------------------------------------
 ; FOR
@@ -1756,7 +1674,6 @@ do_input:
 
 	.tmpstring	times 128 db 0
 
-
 ; -----------------------------------------------------------
 ; IOPL
 do_iopl:
@@ -1764,6 +1681,7 @@ do_iopl:
 	mov bx, [prog_end]
 	call os_run_iopl
 	call do_end
+
 
 ; -----------------------------------------------------------
 ; LEN
@@ -1864,12 +1782,13 @@ do_listbox:
 	mov word cx, [.s3]
 
 	call os_list_dialog
+	jc .esc_pressed
 
+	pusha
 	mov bh, [work_page]			; Move the cursor back
 	mov ah, 02h
 	int 10h
-
-	jc .esc_pressed
+	popa
 
 	mov bx, ax
 	mov ax, 0
@@ -2115,6 +2034,37 @@ do_loop:
 	.sign				db 0
 	
 	
+; ------------------------------------------------------------------
+; MODE
+
+do_mode:
+	call get_token
+	
+	cmp ax, NUMBER
+	je .is_number
+	
+	cmp ax, VARIABLE
+	jne .error
+	
+.is_variable:
+	mov al, [token]
+	call get_var
+	jmp .set_mode
+	
+.is_number:
+	mov si, token
+	call os_string_to_int
+	
+.set_mode:
+	mov ah, 0
+	int 10h
+	ret
+	
+.error:
+	mov si, err_syntax
+	jmp error
+	
+
 ; ------------------------------------------------------------------
 ; MOVE
 
@@ -3973,7 +3923,6 @@ error:
 	delete_cmd		db "DELETE", 0
 	do_cmd			db "DO", 0
 	end_cmd			db "END", 0
-	files_cmd		db "FILES", 0
 	for_cmd 		db "FOR", 0
 	gosub_cmd		db "GOSUB", 0
 	goto_cmd		db "GOTO", 0
@@ -3987,6 +3936,7 @@ error:
 	listbox_cmd		db "LISTBOX", 0
 	load_cmd		db "LOAD", 0
 	loop_cmd		db "LOOP", 0
+	mode_cmd		db "MODE", 0
 	move_cmd 		db "MOVE", 0
 	next_cmd 		db "NEXT", 0
 	number_cmd		db "NUMBER", 0
