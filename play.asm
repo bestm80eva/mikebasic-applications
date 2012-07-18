@@ -2,7 +2,7 @@
 ; A sound player for MikeOS, uses tune editor sound format
 ; Created by Joshua Beck
 ; Released under the GNU General Public Licence, revision 3
-; Version 1.0.0
+; Version 1.0.1
 
 bits 16						; MikeOS program header
 org 32768
@@ -85,6 +85,7 @@ display_information:
 
 	lodsw					; get the song length
 	mov cx, ax
+	inc cx
 	
 play_sound:
 	; now to play the tune, here's the loop
@@ -103,11 +104,13 @@ play_sound:
 	mov si, exit_message			; print exit message and return to the OS
 	call os_print_string
 	call os_print_newline
+	call os_wait_for_key
 	ret
 	
 .cancel:
 	mov si, exit_message
 	call os_print_string
+	call os_wait_for_key
 	ret
 
 no_file:
@@ -120,18 +123,21 @@ file_not_found:
 	mov si, err_file_not_found		; if a file cannot be loaded
 	call os_print_string
 	call os_print_newline
+	call os_wait_for_key
 	ret
 
 invalid_file:
 	mov si, err_invalid_file		; if the file is formatted incorrectly
 	call os_print_string
 	call os_print_newline
+	call os_wait_for_key
 	ret
 
 invalid_version:
 	mov si, err_invalid_version		; if the version is zero
 	call os_print_string
 	call os_print_newline
+	call os_wait_for_key
 	ret
 
 future_version:
@@ -140,6 +146,7 @@ future_version:
 	mov si, err_future_version2
 	call os_print_string
 	call os_print_newline
+	call os_wait_for_key
 	ret
 
 
