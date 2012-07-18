@@ -3,7 +3,7 @@
 ; Produces sound format used by Music Master
 ; Created by Joshua Beck
 ; Licenced under the GNU General Public Licence v3
-; Version 1.0.0
+; Version 1.0.2
 ; For bug reports/questions/feature requests mail me at: mikeosdeveloper@gmail.com
 
 bits 16							; MikeOS Program Header
@@ -11,6 +11,7 @@ org 32768
 %include 'mikedev.inc'
 
 start:
+	call os_clear_screen
 	push si						; store the command line parameter pointer
 	mov si, .welcome_msg
 	call os_print_string
@@ -22,10 +23,11 @@ start:
 	pop si
 	jmp process_parameters
 
-	.welcome_msg					db 'TUNEEDIT - Sound Editor for MikeOS', 13, 10
+	.welcome_msg					db 'TUNEEDIT - Commandline Sound Editor for MikeOS', 13, 10
 	.welcome_msg2					db 'Created by Joshua Beck', 13, 10
-	.welcome_msg3					db 'Version 1.0.0', 13, 10
-	.welcome_msg4					db 'Licenced under the GNU General Public Licence v3', 0
+	.welcome_msg3					db 'Version 1.0.1', 13, 10
+	.welcome_msg4					db 'Licenced under the GNU General Public Licence v3', 13, 10
+	.welcome_msg5					db "Type '?' for help", 0
 
 process_parameters:
 	cmp si, 0
@@ -85,6 +87,9 @@ mainloop:
 	cmp al, 'E'
 	je cmd_enter
 
+	cmp al, 'H'
+	je cmd_help
+	
 	cmp al, 'L'
 	je cmd_length
 
@@ -231,9 +236,10 @@ cmd_clear:
 cmd_display:
 	inc si
 	call get_number_parameter			; get tune number
+	mov dx, ax
+	
 	cmp ax, 8000
 	jge out_of_range
-	mov dx, ax
 
 	mov bx, ax					; to get the actual location, multiply by three then add file start
 	shl bx, 1
@@ -243,12 +249,13 @@ cmd_display:
 	call get_number_parameter			; get number of loops
 	mov cx, ax
 
+	add ax, dx					; error if total exceeds 8000
+	cmp ax, 8000
+	jg out_of_range
+	
 	mov si, bx
 
 .print_byte:
-	cmp dx, 8000					; is the location out of range?
-	jge out_of_range
-
 	mov ax, dx					; print location, then seperator
 	call os_int_to_string
 	push si
@@ -280,8 +287,6 @@ cmd_display:
 
 	inc dx						; continue required times
 	loop .print_byte
-
-	call os_print_newline
 
 	jmp mainloop
 
@@ -533,6 +538,7 @@ cmd_play:
 ;=================
 
 cmd_quit:
+	call os_clear_screen
 	mov si, exit_message
 	call os_print_string
 	call os_print_newline
@@ -546,12 +552,19 @@ cmd_quit:
 ;=================
 cmd_save:
 	mov ax, file_name
-	call os_file_exists
-	jnc .file_exists
-
-	mov bp, sound_header
+	call os_string_length
+	cmp ax, 0
+	je .no_filename
+	
+	mov ax, sound_header
 	add bp, 34
 	mov word bx, [bp]
+;	cmp bx, 0
+;	je .no_length
+	
+	mov ax, file_name
+	call os_file_exists
+	jnc .file_exists
 
 	mov cx, bx
 	shl cx, 1
@@ -580,7 +593,7 @@ cmd_save:
 	mov si, file_name
 	mov di, open_file_name
 	call os_string_compare
-	jc .confirm_overwrite
+	jc .auto_overwrite
 	
 	mov si, .file_exists_msg
 	call os_print_string
@@ -617,12 +630,27 @@ cmd_save:
 .save_failed:
 	mov si, .failure_msg
 	call os_print_string
+	call os_print_newline
+	jmp mainloop
+	
+.no_filename:
+	mov si, .no_filename_msg
+	call os_print_string
+	call os_print_newline
+	jmp mainloop
+
+.no_length:
+	mov si, .no_length_msg
+	call os_print_string
+	call os_print_newline
 	jmp mainloop
 
 .data:
 	.file_exists_msg			db 'File exists! Overwrite? (Y/N)', 0
 	.success_msg				db 'Tune Saved to: ', 0
 	.failure_msg				db 'File save failed.', 0
+	.no_filename_msg			db 'You must set a file name before saving', 0
+	.no_length_msg				db 'You must set the length of the file', 0
 
 
 ;=================
@@ -660,7 +688,7 @@ cmd_help:
 	help_string5				db "b [string]             sets the title of the tune", 13, 10
 	help_string6				db "c                      clear all data", 13, 10
 	help_string7				db "d [loc] [num]          displays the stored value of tones", 13, 10
-	help_string8				db "e [loc]                prompts to enter tones at location (as >TONE LENGTH)", 13, 10
+	help_string8				db "e [loc]                prompts to enter tones at location (as >[freq] [length])", 13, 10
 	help_string9				db "l [num]                sets the length of the tune in tones", 13, 10
 	help_string10				db "m [loc1] [loc2] [num]  copies data from one location to another", 13, 10
 	help_string11				db "n [string]             sets the name of the file", 13, 10
